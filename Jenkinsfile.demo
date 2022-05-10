@@ -2,18 +2,18 @@
 
 import com.cleverbuilder.GlobalVars
 import com.cleverbuilder.SampleClass
+import com.cleverbuilder.PublicService
 
 pipeline {
     agent any
     stages {
         stage('Demo') {
             steps {
-                echo 'Hello, world'
-                sayHello 'Dave'
-                gitCheckout()
-                echo 'The value of foo is : ' + GlobalVars.foo
-
                 script {
+                    echo 'Hello, world'
+                    sayHello 'Dave'
+                    gitCheckout()
+                    echo 'The value of foo is : ' + GlobalVars.foo
                     def person = new SampleClass()
                     person.age = 21
                     person.increaseAge(10)
