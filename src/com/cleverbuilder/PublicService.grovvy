@@ -9,7 +9,7 @@ class PublicService {
             label: 'Get Git commit message'
         ).trim()
     }
-    String getCommitId()) {
+    String getCommitId() {
         script.sh(
             returnStdout: true,
             script: 'git rev-parse  HEAD',
