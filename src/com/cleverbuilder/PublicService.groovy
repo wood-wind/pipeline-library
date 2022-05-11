@@ -19,7 +19,7 @@ class PublicService {
     String getCommitIdShort() {
         script.sh(
             returnStdout: true,
-            script: 'git log --oneline -1 | awk '{print \$1}'',
+            script: 'git log --oneline -1 | awk '{print $1}'",
             label: 'Get Git commit ID short'
         ).trim()
     }
