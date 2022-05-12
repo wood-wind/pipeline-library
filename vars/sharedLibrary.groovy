@@ -65,36 +65,6 @@ def call(String type = 'web-java', Map map) {
                 //booleanParam(name: 'IS_DEPLOY_MULTI_ENV', defaultValue: false, description: '是否同时部署当前job项目多环境 如dev test等')
             }
 
-            triggers {
-                // 根据提交代码自动触发CI/CD流水线 在代码库设置WebHooks连接后生效: http://jenkins.domain.com/generic-webhook-trigger/invoke?token=jenkins
-                GenericTrigger(
-                        genericVariables: [
-                                [key: 'project_git_http_url', value: '$.project.git_http_url'],
-                                [key: 'ref', value: '$.ref'],
-                                [key: 'git_message', value: '$.commits[0].message'],
-                                [key: 'git_user_name', value: '$.user_name'],
-                                [key: 'git_user_email', value: '$.user_email'],
-                                [key: 'git_event_name', value: '$.event_name'],
-                                [key: 'commits', value: '$.commits'],
-                                [key: 'changed_files', value: '$.commits[*].[\'modified\',\'added\',\'removed\'][*]'],
-                        ],
-                        token: "jenkins", // 唯一标识 env.JOB_NAME
-                        causeString: ' Triggered on $ref',
-                        printContributedVariables: true,
-                        printPostContent: true,
-                        silentResponse: false,
-                        regexpFilterText: '$project_git_http_url_$ref_$git_message',
-                        // WebHooks触发后 正则匹配规则: 先匹配Job配置Git仓库确定项目, 根据jenkins job配置的分支匹配, 再匹配最新一次Git提交记录是否含有release发布关键字
-                        // 如果是多模块项目再去匹配部署的模块 对于开发者只需要关心触发自动发布Git提交规范即可 如单模块: release 多模块: release(app)
-                        // 针对monorepo单仓多包仓库 可根据changed_files变量中变更文件所在的项目匹配自动触发构建具体的分支
-                        regexpFilterExpression: '^(' + "${REPO_URL}" + ')' +
-                                '_(refs/heads/' + "${BRANCH_NAME}" + ')' +
-                                '_(release)' + "${PROJECT_TYPE.toInteger() == GlobalVars.backEnd ? '\\(' + "${SHELL_PROJECT_TYPE}" + '\\)' : ''}" + '.*$'
-                )
-                // 每分钟判断一次代码是否存在变化 有变化就执行
-                // pollSCM('H/1 * * * *')
-            }
-
             environment {
                 // 系统环境变量
                 NODE_OPTIONS = "--max_old_space_size=4096" // NODE内存调整 防止打包内存溢出
@@ -442,7 +412,7 @@ def call(String type = 'web-java', Map map) {
 def getInitParams(map) {
     def jsonParams = readJSON text: "${JSON_PARAMS}"
     // println "${jsonParams}"
-    REPO_URL = jsonParams.REPO_URL ? jsonParams.REPO_URL.trim() : "" // Git源码地址
+//    REPO_URL = jsonParams.REPO_URL ? jsonParams.REPO_URL.trim() : "" // Git源码地址
     BRANCH_NAME = jsonParams.BRANCH_NAME ? jsonParams.BRANCH_NAME.trim() : GlobalVars.defaultBranch  // Git默认分支
     PROJECT_TYPE = jsonParams.PROJECT_TYPE ? jsonParams.PROJECT_TYPE.trim() : ""  // 项目类型 1 前端项目 2 后端项目
     // 计算机语言类型 1. Java  2. Go  3. Python  5. C++
@@ -654,53 +624,12 @@ def pullCIRepo() {
     }
 }
 
-/**
- * 获取项目代码
- */
-def pullProjectCode() {
-    // 未获取到参数 兼容处理 因为参数配置从代码拉取 必须先执行jenkins任务才能生效
-    if (!params.GIT_TAG) {
-        params.GIT_TAG = GlobalVars.noGit
-    }
-    // 自定义选择指定分支 不使用配置好的分支情况
-    if (params.IS_GIT_TAG && "${BRANCH_NAME}" != "${params.GIT_BRANCH}") {
-        BRANCH_NAME = "${params.GIT_BRANCH}"  // Git分支
-    }
-
-    // 获取应用打包代码
-    if (params.GIT_TAG == GlobalVars.noGit) {
-        println "Git构建分支是: ${BRANCH_NAME} 📇"
-        // def git = git url: "${REPO_URL}", branch: "${BRANCH_NAME}", credentialsId: "${GIT_CREDENTIALS_ID}"
-        // println "${git}"
-        // 对于大体积仓库或网络不好情况 自定义代码下载超时时间 默认10分钟
-        checkout([$class           : 'GitSCM',
-                  branches         : [[name: "*/${BRANCH_NAME}"]],
-                  extensions       : [[$class: 'CloneOption', timeout: 30]],
-                  gitTool          : 'Default',
-                  userRemoteConfigs: [[credentialsId: "${GIT_CREDENTIALS_ID}", url: "${REPO_URL}"]]
-        ])
-    } else {
-        println "Git构建标签是: ${params.GIT_TAG} 📇"
-        checkout([$class                           : 'GitSCM',
-                  branches                         : [[name: "${params.GIT_TAG}"]],
-                  doGenerateSubmoduleConfigurations: false,
-                  extensions                       : [],
-                  gitTool                          : 'Default',
-                  submoduleCfg                     : [],
-                  userRemoteConfigs                : [[credentialsId: "${GIT_CREDENTIALS_ID}", url: "${REPO_URL}"]]
-        ])
-    }
-    // 是否存在CI代码
-    dir("${env.WORKSPACE}/ci") {
-        existCiCode()
-    }
-}
 
 /**
  * 代码质量分析
  */
 def codeQualityAnalysis() {
-    pullProjectCode()
+
     SonarQube.scan(this, "${SHELL_PROJECT_NAME}-${SHELL_PROJECT_TYPE}")
     // SonarQube.getStatus(this, "${PROJECT_NAME}")
 /*    def scannerHome = tool 'SonarQube' // 工具名称

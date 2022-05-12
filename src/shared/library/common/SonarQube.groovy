@@ -42,7 +42,6 @@ class SonarQube implements Serializable {
     -Dsonar.projectName=${projectName}  \
     -Dsonar.projectDescription="${projectName}"  \
     -Dsonar.projectVersion=${scanTime} \
-    -Dsonar.links.homepage=${ctx.REPO_URL} \
     -Dsonar.sourceEncoding=UTF-8 \
     ${diffParams}
 
