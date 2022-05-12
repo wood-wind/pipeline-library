@@ -151,7 +151,7 @@ def call(String type = 'web-java', Map map) {
                 //安静的时期 设置管道的静默时间段（以秒为单位），以覆盖全局默认值
                 quietPeriod(3)
                 //删除隐式checkout scm语句
-                skipDefaultCheckout()
+    //            skipDefaultCheckout()
                 //日志颜色
     //            ansiColor('xterm')
                 //当agent为Docker或Dockerfile时, 指定在同一个jenkins节点上,每个stage都分别运行在一个新容器中,而不是同一个容器
