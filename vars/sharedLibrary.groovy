@@ -2,8 +2,6 @@
 import shared.library.GlobalVars
 import shared.library.Utils
 import shared.library.common.*
-import shared.library.devops.ChangeLog
-import shared.library.devops.GitTagLog
 
 /**
  * @author 潘维吉
@@ -134,8 +132,7 @@ def call(String type = 'web-java', Map map) {
                         script {
                             echo '初始化'
                             initInfo()
-                            getShellParams(map)
-                            getUserInfo()
+                            //getShellParams(map)
                         }
                     }
                 }
@@ -585,30 +582,6 @@ def getShellParams(map) {
 }
 
 /**
- * 获取用户信息
- */
-def getUserInfo() {
-    // 用户相关信息
-    if ("${IS_AUTO_TRIGGER}" == 'true') { // 自动触发构建
-        BUILD_USER = "$git_user_name"
-        BUILD_USER_EMAIL = "$git_user_email"
-    } else {
-        wrap([$class: 'BuildUser']) {
-            try {
-                BUILD_USER = env.BUILD_USER
-                BUILD_USER_EMAIL = env.BUILD_USER_EMAIL
-                // 获取钉钉插件手机号 注意需要系统设置里in-process script approval允许权限
-                def user = hudson.model.User.getById(env.BUILD_USER_ID, false).getProperty(io.jenkins.plugins.DingTalkUserProperty.class)
-                BUILD_USER_MOBILE = user.mobile
-            } catch (error) {
-                println "获取账号部分信息失败"
-                println error.getMessage()
-            }
-        }
-    }
-}
-
-/**
  * 获取CI代码库
  */
 def pullCIRepo() {
@@ -659,65 +632,6 @@ def buildImage() {
     Docker.multiStageBuild(this, "${DOCKER_MULTISTAGE_BUILD_IMAGES}")
     // 构建Docker镜像  只构建一次
     Docker.build(this, "${dockerBuildImageName}")
-}
-
-/**
- * 上传部署文件到OSS
- * 方便下载构建部署包
- */
-def uploadOss() {
-    if ("${IS_UPLOAD_OSS}" == 'true') {
-        try {
-            if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-            } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) {
-                // 源文件地址
-                def sourceFile = "${env.WORKSPACE}/${mavenPackageLocation}"
-                // 目标文件
-                def targetFile = "java/${env.JOB_NAME}/${PROJECT_NAME}-${SHELL_ENV_MODE}-${env.BUILD_NUMBER}.${javaPackageType}"
-                javaOssUrl = AliYunOss.upload(this, sourceFile, targetFile)
-                println "${javaOssUrl}"
-                Tools.printColor(this, "上传部署文件到OSS成功 ✅")
-            }
-        } catch (error) {
-            println "上传部署文件到OSS异常"
-            println error.getMessage()
-        }
-    }
-}
-
-/**
- * 上传部署文件到远程云端
- */
-def uploadRemote(filePath) {
-    // ssh免密登录检测和设置
-    autoSshLogin()
-    timeout(time: 1, unit: 'MINUTES') {
-        // 同步脚本和配置到部署服务器
-        syncScript()
-    }
-    Tools.printColor(this, "上传部署文件到远程云端 🚀 ")
-    def projectDeployFolder = "/${DEPLOY_FOLDER}/${SHELL_PROJECT_NAME}-${SHELL_PROJECT_TYPE}/"
-    if ("${IS_PUSH_DOCKER_REPO}" != 'true') { // 远程镜像库方式不需要再上传构建产物 直接远程仓库docker pull拉取镜像
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-            sh "cd ${filePath} && scp ${proxyJumpSCPText} ${npmPackageLocation} " +
-                    "${remote.user}@${remote.host}:${projectDeployFolder}"
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) {
-            // 上传前删除部署目录的jar包 防止名称修改等导致多个部署目标jar包存在  jar包需要唯一性
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd ${projectDeployFolder} && rm -f *.${javaPackageType}' "
-            // 上传构建包到远程服务器
-            sh "cd ${filePath} && scp ${proxyJumpSCPText} ${mavenPackageLocation} " +
-                    "${remote.user}@${remote.host}:${projectDeployFolder} "
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Go) {
-            // Go语言打包产物 上传包到远程服务器
-            sh "cd ${filePath} && scp ${proxyJumpSCPText} main.go ${remote.user}@${remote.host}:${projectDeployFolder} "
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Python) {
-            // Python语言打包产物 上传包到远程服务器
-            sh "cd ${filePath}/dist && scp ${proxyJumpSCPText} app ${remote.user}@${remote.host}:${projectDeployFolder} "
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Cpp) {
-            // C++语言打包产物 上传包到远程服务器
-            sh "cd ${filePath} && scp ${proxyJumpSCPText} app ${remote.user}@${remote.host}:${projectDeployFolder} "
-        }
-    }
 }
 
 /**
@@ -856,156 +770,6 @@ def serverlessDeploy() {
 }
 
 /**
- * 自动设置免密连接 用于CI/CD服务器和应用部署服务器免密通信  避免手动批量设置繁琐重复劳动
- */
-def autoSshLogin() {
-    try {
-        if ("${remote.user}".trim() == "" || "${remote.host}".trim() == "") {
-            currentBuild.result = 'FAILURE'
-            error("请配置部署服务器登录用户名或IP地址 ❌")
-        }
-        // 检测ssh免密连接是否成功
-        sh "ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} exit"
-    } catch (error) {
-        println error.getMessage()
-        if (error.getMessage().contains("255")) { // 0连接成功 255无法连接
-            println "免密登录失败  根据hosts.txt文件已有的账号信息自动设置"
-            try {
-                // 目的是清除当前机器里关于远程服务器的缓存和公钥信息 如远程服务器已重新初始化情况 导致本地还有缓存
-                // ECDSA host key "ip" for  has changed and you have requested strict checking 报错
-                sh "ssh-keygen -R ${remote.host}"
-            } catch (e) {
-                println "清除当前机器里关于远程服务器的缓存和公钥信息失败"
-                println e.getMessage()
-            }
-            dir("${env.WORKSPACE}/ci") {
-                try {
-                    // 执行免密登录脚本
-                    sh " cd _linux && chmod +x auto-ssh.sh && ./auto-ssh.sh "
-                } catch (e) {
-                    println e.getMessage()
-                }
-            }
-        }
-    }
-}
-
-/**
- * 同步脚本和配置到部署服务器
- */
-def syncScript() {
-    try {
-        // 自动创建服务器部署目录
-        // ssh登录概率性失败 连接数超报错: kex_exchange_identification
-        // 解决vim /etc/ssh/sshd_config中 MaxSessions与MaxStartups改大2000 默认10 重启生效 systemctl restart sshd.service
-        sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'mkdir -p /${DEPLOY_FOLDER}/${SHELL_PROJECT_NAME}-${SHELL_PROJECT_TYPE}' "
-    } catch (error) {
-        println "访问目标服务器失败, 首先检查jenkins服务器和应用服务器的ssh免密连接是否生效 ❌"
-        println error.getMessage()
-    }
-
-    dir("${env.WORKSPACE}/ci") {
-        try {
-            // Docker多阶段镜像构建处理
-            Docker.multiStageBuild(this, "${DOCKER_MULTISTAGE_BUILD_IMAGES}")
-            // scp -r  递归复制整个目录 复制部署脚本和配置文件到服务器
-            sh " chmod -R 777 .ci && scp ${proxyJumpSCPText} -r .ci/*  ${remote.user}@${remote.host}:/${DEPLOY_FOLDER}/ "
-        } catch (error) {
-            println "复制部署脚本和配置文件到服务器失败 ❌"
-            println error.getMessage()
-        }
-
-        // 给shell脚本执行权限
-        sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER} " +
-                "&& chmod -R 777 web && chmod -R 777 go && chmod -R 777 python && chmod -R 777 cpp && chmod +x *.sh ' "
-    }
-}
-
-/**
- * 是否存在CI代码
- */
-def existCiCode() {
-    if (!fileExists(".ci/Dockerfile")) {
-        println "为保证先后顺序拉取代码 可能导致第一次构建时候无法找到CI仓库代码 重新拉取代码"
-        pullCIRepo()
-    }
-}
-
-/**
- * 部署运行之前操作
- */
-def beforeRunProject() {
-    // 多节点部署无感知不执行部署前通知
-    if ("${IS_BEFORE_DEPLOY_NOTICE}" == 'true' && "${IS_ROLL_DEPLOY}" == 'false' && "${IS_BLUE_GREEN_DEPLOY}" == 'false') {
-        // 部署之前通知
-        dingNotice(2)
-    }
-    try {
-        if ("${IS_GRACE_SHUTDOWN}" == 'true') {
-            // Spring Boot优雅停机 curl几秒超时
-            sh " curl --connect-timeout 3 --max-time 10  http://${remote.host}:${SHELL_HOST_PORT}/actuator/shutdown -X POST "
-        }
-    } catch (error) {
-        println "服务已无法访问情况 优雅停机等出现异常捕获 继续部署流程"
-        println error.getMessage()
-    }
-}
-
-/**
- * 初始化Docker引擎环境 自动化第一次部署环境
- */
-def initDocker() {
-    try {
-        // 判断服务器是是否安装docker环境
-        sh "ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'docker version' "
-    } catch (error) {
-        println error.getMessage()
-        dir("${env.WORKSPACE}/ci") {
-            linuxType = Utils.getShEchoResult(this, "ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'lsb_release -a' ")
-            // 判断linux主流发行版类型
-            dockerFileName = ""
-            if ("${linuxType}".contains("CentOS")) {
-                println "CentOS系统"
-                dockerFileName = "docker-install.sh"
-            } else if ("${linuxType}".contains("Ubuntu")) {
-                println "Ubuntu系统"
-                dockerFileName = "docker-install-ubuntu.sh"
-            } else {
-                println "Linux系统: ${linuxType}"
-                error("部署服务器非CentOS或Ubuntu系统类型 ❌")
-            }
-            // 上传docker初始化脚本
-            sh " scp ${proxyJumpSCPText} -r ./_docker/${dockerFileName}  ${remote.user}@${remote.host}:/${DEPLOY_FOLDER}/ "
-            // 给shell脚本执行权限
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'chmod +x /${DEPLOY_FOLDER}/${dockerFileName} ' "
-            println "初始化Docker引擎环境  执行Docker初始化脚本"
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER} && ./${dockerFileName} ' "
-        }
-    }
-}
-
-/**
- * 回滚版本
- */
-def rollbackVersion() {
-    if ("${ROLLBACK_BUILD_ID}" == '0') { // 默认回滚到上一个版本
-        ROLLBACK_BUILD_ID = "${Integer.parseInt(env.BUILD_ID) - 2}"
-    }
-    //input message: "是否确认回滚到构建ID为${ROLLBACK_BUILD_ID}的版本", ok: "确认"
-    //该/var/jenkins_home/**路径只适合在master节点执行的项目 不适合slave节点的项目
-    archivePath = "/var/jenkins_home/jobs/${env.JOB_NAME}/builds/${ROLLBACK_BUILD_ID}/archive/"
-    uploadRemote("${archivePath}")
-    runProject()
-    if (params.IS_HEALTH_CHECK == true) {
-        healthCheck()
-    }
-    if ("${IS_ROLL_DEPLOY}" == 'true') {
-        scrollToDeploy()
-    }
-}
-
-
-/**
  * 制品仓库版本管理 如Maven、Npm、Docker等以及通用仓库版本上传 支持大型项目复杂依赖关系
  */
 def productsWarehouse(map) {
@@ -1052,50 +816,7 @@ def alwaysPost() {
     }
 }
 
-/**
- * 生成tag和变更日志
- */
-def gitTagLog() {
-    // 未获取到参数 兼容处理 因为参数配置从代码拉取 必须先执行jenkins任务才能生效
-    if (!params.IS_GIT_TAG && params.IS_GIT_TAG != false) {
-        params.IS_GIT_TAG = true
-    }
-    // 构建成功后生产环境并发布类型自动打tag和变更记录  指定tag方式不再重新打tag
-    if (params.IS_GIT_TAG == true && "${IS_PROD}" == 'true' && params.GIT_TAG == GlobalVars.noGit) {
-        // 获取变更记录
-        def gitChangeLog = changeLog.genChangeLog(this, 100)
-        def latestTag = ""
-        try {
-            // 获取本地最新tag名称
-            latestTag = Utils.getShEchoResult(this, "git describe --abbrev=0 --tags")
-        } catch (error) {
-            println "没有获取到最新的git tag标签"
-            println error.getMessage()
-        }
-        // 生成语义化版本号
-        tagVersion = Utils.genSemverVersion(latestTag, gitChangeLog.contains(GlobalVars.gitCommitFeature) ?
-                GlobalVars.gitCommitFeature : GlobalVars.gitCommitFix)
-        // 生成tag和变更日志
-        gitTagLog.genTagAndLog(this, tagVersion, gitChangeLog, "${REPO_URL}", "${GIT_CREDENTIALS_ID}")
-    }
-    // 指定tag时候设置版本信息
-    if (params.GIT_TAG != GlobalVars.noGit) {
-        tagVersion = params.GIT_TAG
-    }
-}
 
-/**
- * 同时构建部署多环境
- */
-def deployMultiEnv() {
-    currentBuild.result = "SUCCESS"
-    if (params.IS_DEPLOY_MULTI_ENV == true) {
-        // 注意流水线开启并发构建 会影响下一个嵌套任务运行
-        jobDevEnv = build job: "${PROJECT_NAME}-dev"
-        println jobDevEnv.getResult()
-        jobTestEnv = build job: "${PROJECT_NAME}-test"
-        println jobTestEnv.getResult()
-    }
-}
+
 
 
