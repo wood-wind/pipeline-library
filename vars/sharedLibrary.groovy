@@ -41,9 +41,7 @@ def call(String type = 'web-java', Map map) {
             //agent { label "${map.jenkins_node}" }
 
             parameters {
-                choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.rollback],
-                        description: '选择部署方式  1. ' + GlobalVars.release + '发布 2. ' + GlobalVars.rollback +
-                                '回滚(基于jenkins归档方式回滚选择' + GlobalVars.rollback + ', 基于Git Tag方式回滚请选择' + GlobalVars.release + ')')
+                choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1. '+GlobalVars.release + '发布 2. '+ GlobalVars.rollback +'dev分支')
    //             gitParameter(name: 'GIT_BRANCH', type: 'PT_BRANCH', defaultValue: "${BRANCH_NAME}", selectedValue: "DEFAULT",
    //                     useRepository: "${REPO_URL}", sortMode: 'ASCENDING', branchFilter: 'origin/(.*)',
    //                     description: "选择要构建的Git分支 默认: " + "${BRANCH_NAME} (可自定义配置具体任务的默认常用分支, 实现一键或全自动构建)")
@@ -346,53 +344,6 @@ def call(String type = 'web-java', Map map) {
     //                }
     //            }
 
-            }
-
-            // post包含整个pipeline或者stage阶段完成情况
-            post() {
-                always {
-                    script {
-                        echo '总是运行，无论成功、失败还是其他状态'
-                        alwaysPost()
-                    }
-                }
-                success {
-                    script {
-                        echo '当前成功时运行'
-                        //deployMultiEnv()
-                    }
-                }
-                failure {
-                    script {
-                        echo '当前失败时才运行'
-                        dingNotice(0, "CI/CD流水线失败 ❌")
-                    }
-                }
-                unstable {
-                    script {
-                        echo '不稳定状态时运行'
-                    }
-                }
-                aborted {
-                    script {
-                        echo '被终止时运行'
-                    }
-                }
-                changed {
-                    script {
-                        echo '当前完成状态与上一次完成状态不同执行'
-                    }
-                }
-                fixed {
-                    script {
-                        echo '上次完成状态为失败或不稳定,当前完成状态为成功时执行'
-                    }
-                }
-                regression {
-                    script {
-                        echo '上次完成状态为成功,当前完成状态为失败、不稳定或中止时执行'
-                    }
-                }
             }
         }
 

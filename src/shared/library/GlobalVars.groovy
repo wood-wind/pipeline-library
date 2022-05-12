@@ -16,7 +16,7 @@ class GlobalVars implements Serializable {
      * 服务部署方式
      */
     static String release = "release"  // 发布
-    static String rollback = "rollback" // 回滚
+    static String dev = "dev" // 回滚
     static String stop = "stop" // 停机下线
 
     /**
