@@ -42,20 +42,13 @@ def call(String type = 'web-java', Map map) {
 
             parameters {
                 choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1. '+GlobalVars.release + '发布 2. '+ GlobalVars.rollback +'dev分支')
+                choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
+                choice(name: 'IS_DEPLOY', choices: ['Y',''], description: '是否部署,Y或置空')
    //             gitParameter(name: 'GIT_BRANCH', type: 'PT_BRANCH', defaultValue: "${BRANCH_NAME}", selectedValue: "DEFAULT",
    //                     useRepository: "${REPO_URL}", sortMode: 'ASCENDING', branchFilter: 'origin/(.*)',
    //                     description: "选择要构建的Git分支 默认: " + "${BRANCH_NAME} (可自定义配置具体任务的默认常用分支, 实现一键或全自动构建)")
    //             gitParameter(name: 'GIT_TAG', type: 'PT_TAG', defaultValue: GlobalVars.noGit, selectedValue: GlobalVars.noGit,
    //                     useRepository: "${REPO_URL}", sortMode: 'DESCENDING_SMART', tagFilter: '*',
-   //                     description: "DEPLOY_MODE基于" + GlobalVars.release + "部署方式, 可选择指定Git Tag版本标签构建, 默认不选择是获取指定分支下的最新代码, 选择后按tag代码而非分支代码构建⚠️, 同时可作为一键回滚版本使用 🔙 ")
-                string(name: 'ROLLBACK_BUILD_ID', defaultValue: '0', description: "DEPLOY_MODE基于" + GlobalVars.rollback + "部署方式, 输入对应保留的回滚构建记录ID, " +
-                        "默认0是回滚到上一次连续构建, 当前归档模式的回滚仅适用于在master节点构建的任务")
-                booleanParam(name: 'IS_HEALTH_CHECK', defaultValue: "${map.is_health_check}",
-                        description: '是否执行服务启动健康检测 否: 可大幅减少构建时间 分布式部署不建议取消')
-                booleanParam(name: 'IS_GIT_TAG', defaultValue: "${map.is_git_tag}",
-                        description: '是否生产环境自动给Git仓库设置Tag版本和生成CHANGELOG.md变更记录')
-                booleanParam(name: 'IS_DING_NOTICE', defaultValue: "${map.is_ding_notice}", description: "是否开启钉钉群通知 📢 ")
-
             }
 
             environment {
@@ -70,7 +63,6 @@ def call(String type = 'web-java', Map map) {
                 JDK_VERSION = "${map.jdk}" // JDK版本
                 CI_GIT_CREDENTIALS_ID = "${map.ci_git_credentials_id}" // CI仓库信任ID
                 GIT_CREDENTIALS_ID = "${map.git_credentials_id}" // Git信任ID
-                DING_TALK_CREDENTIALS_ID = "${map.ding_talk_credentials_id}" // 钉钉授信ID 系统设置里面配置 自动生成
                 DEPLOY_FOLDER = "${map.deploy_folder}" // 服务器上部署所在的文件夹名称
                 NPM_PACKAGE_FOLDER = "${map.npm_package_folder}" // Web项目NPM打包代码所在的文件夹名称
                 WEB_STRIP_COMPONENTS = "${map.web_strip_components}" // Web项目解压到指定目录层级
@@ -91,8 +83,6 @@ def call(String type = 'web-java', Map map) {
                 IS_GRACE_SHUTDOWN = "${map.is_grace_shutdown}" // 是否进行优雅停机
                 IS_NEED_SASS = "${map.is_need_sass}" // 是否需要css预处理器sass
                 IS_AUTO_TRIGGER = false // 是否是自动触发构建
-                IS_GEN_QR_CODE = false // 生成二维码 方便手机端扫描
-                IS_ARCHIVE = false // 是否归档
                 IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
                 IS_INTEGRATION_TESTING = false // 是否进集成测试
                 IS_NOTICE_CHANGE_LOG = "${map.is_notice_change_log}" // 是否通知变更记录
