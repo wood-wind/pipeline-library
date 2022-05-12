@@ -41,7 +41,7 @@ def call(String type = 'web-java', Map map) {
             //agent { label "${map.jenkins_node}" }
 
             parameters {
-                choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1. '+GlobalVars.release + '发布 2. '+ GlobalVars.rollback +'dev分支')
+                choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1. '+GlobalVars.release + '发布 2. '+ GlobalVars.dev +'dev分支')
                 choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
                 choice(name: 'IS_DEPLOY', choices: ['Y',''], description: '是否部署,Y或置空')
    //             gitParameter(name: 'GIT_BRANCH', type: 'PT_BRANCH', defaultValue: "${BRANCH_NAME}", selectedValue: "DEFAULT",
