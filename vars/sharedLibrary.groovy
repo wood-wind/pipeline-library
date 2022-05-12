@@ -17,7 +17,7 @@ def call(String type = 'web-java', Map map) {
     gitTagLog = new GitTagLog()
 
     // 初始化参数
-    getInitParams(map)
+//    getInitParams(map)
 
 //    remote = [:]
 //    try {
