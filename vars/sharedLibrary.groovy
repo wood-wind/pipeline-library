@@ -19,22 +19,27 @@ def call(String type = 'web-java', Map map) {
     // 初始化参数
     getInitParams(map)
 
-    remote = [:]
-    try {
-        remote.host = "${REMOTE_IP}" // 部署应用程序服务器IP 动态参数 可配置在独立的job中
-    } catch (exception) {
-        // println exception.getMessage()
-        remote.host = "${map.remote_ip}" // 部署应用程序服务器IP  不传参数 使用默认值
-    }
-    remote.user = "${map.remote_user_name}"
-    remote_worker_ips = readJSON text: "${map.remote_worker_ips}"  // 分布式部署工作服务器地址 同时支持N个服务器
-    // 代理机或跳板机外网ip用于透传部署到目标机器
-    proxy_jump_ip = "${map.proxy_jump_ip}"
+//    remote = [:]
+//    try {
+//        remote.host = "${REMOTE_IP}" // 部署应用程序服务器IP 动态参数 可配置在独立的job中
+//    } catch (exception) {
+//        // println exception.getMessage()
+//        remote.host = "${map.remote_ip}" // 部署应用程序服务器IP  不传参数 使用默认值
+//    }
+//    remote.user = "${map.remote_user_name}"
+//    remote_worker_ips = readJSON text: "${map.remote_worker_ips}"  // 分布式部署工作服务器地址 同时支持N个服务器
+//    // 代理机或跳板机外网ip用于透传部署到目标机器
+//    proxy_jump_ip = "${map.proxy_jump_ip}"
 
     if (type == "web-java") { // 针对标准项目
         pipeline {
             // 指定流水线每个阶段在哪里执行(物理机、虚拟机、Docker容器) agent any
-            agent { label "${PROJECT_TYPE.toInteger() == GlobalVars.frontEnd ? "${map.jenkins_node_front_end}" : "${map.jenkins_node}"}" }
+            agent {
+                node {
+                    //label "${PROJECT_TYPE.toInteger() == GlobalVars.frontEnd ? "${map.jenkins_node_front_end}" : "${map.jenkins_node}"}"
+                    label 'maven'
+                }
+            }
             //agent { label "${map.jenkins_node}" }
 
             parameters {
@@ -136,7 +141,7 @@ def call(String type = 'web-java', Map map) {
                 //超时时间 job会自动被终止
                 timeout(time: 30, unit: 'MINUTES')
                 //保持构建的最大个数
-                buildDiscarder(logRotator(numToKeepStr: "${map.build_num_keep}", artifactNumToKeepStr: "${map.build_num_keep}"))
+    //            buildDiscarder(logRotator(numToKeepStr: "${map.build_num_keep}", artifactNumToKeepStr: "${map.build_num_keep}"))
                 //控制台输出增加时间戳
                 timestamps()
                 //不允许同一个job同时执行流水线,可被用来防止同时访问共享资源等
@@ -174,8 +179,10 @@ def call(String type = 'web-java', Map map) {
                          } */
                     steps {
                         script {
-                            pullProjectCode()
-                            pullCIRepo()
+                            echo 'checkout(scm)'
+                            checkout(scm)
+    //                        pullProjectCode()
+    //                        pullCIRepo()
                             /*  parallel( // 步骤内并发执行
                                      'CI/CD代码': {
                                          pullCIRepo()
@@ -189,80 +196,44 @@ def call(String type = 'web-java', Map map) {
 
                 /*   stage('扫码代码') {
                        //failFast true  // 其他阶段失败 中止parallel块同级正在进行的并行阶段
-                       parallel { */// 阶段并发执行
-                stage('代码质量') {
-                    when {
-                        beforeAgent true
-                        // 生产环境不进行代码分析 缩减构建时间
-                        not {
-                            anyOf {
-                                branch 'master'
-                                branch 'prod'
-                            }
-                        }
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            // 是否进行代码质量分析  && fileExists("sonar-project.properties") == true 代码根目录配置sonar-project.properties文件才进行代码质量分析
-                            // return ("${IS_CODE_QUALITY_ANALYSIS}" == 'true' )
-                            return false
-                        }
-                    }
-                    agent {
-                        label "linux"
-                        /*   docker {
-                               // sonarqube环境  构建完成自动删除容器
-                               image "sonarqube:community"
-                               reuseNode true // 使用根节点
-                           }*/
-                    }
-                    steps {
-                        // 只显示当前阶段stage失败  而整个流水线构建显示成功
-                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                            script {
-                                codeQualityAnalysis()
-                            }
-                        }
-                    }
-                }
+        //               parallel { */// 阶段并发执行
+        //        stage('代码质量') {
+        //            when {
+        //                beforeAgent true
+        //                // 生产环境不进行代码分析 缩减构建时间
+        //                not {
+        //                    anyOf {
+        //                        branch 'master'
+        //                        branch 'prod'
+        //                    }
+        //                }
+        //                environment name: 'DEPLOY_MODE', value: GlobalVars.release
+        //                environment name: 'IS_SONAR', value: 'Y'
+        //                expression {
+        //                    // 是否进行代码质量分析  && fileExists("sonar-project.properties") == true 代码根目录配置sonar-project.properties文件才进行代码质量分析
+        //                    // return ("${IS_CODE_QUALITY_ANALYSIS}" == 'true' )
+        //                    return false
+        //                }
+        //            }
+        //            agent {
+        //                label "linux"
+        //                /*   docker {
+        //                       // sonarqube环境  构建完成自动删除容器
+        //                       image "sonarqube:community"
+        //                       reuseNode true // 使用根节点
+        //                   }*/
+        //            }
+        //            steps {
+        //                // 只显示当前阶段stage失败  而整个流水线构建显示成功
+        //                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        //                    script {
+        //                        codeQualityAnalysis()
+        //                    }
+        //                }
+        //            }
+        //        }
 
-                stage('Docker For JavaScript构建') {
-                    when {
-                        beforeAgent true
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression { return (IS_DOCKER_BUILD == true && "${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) }
-                    }
-                    agent {
-                        // label "linux"
-                        docker {
-                            // Node环境  构建完成自动删除容器
-                            image "node:${NODE_VERSION.replace('Node', '')}"
-                            reuseNode true // 使用根节点
-                        }
-                    }
-                    steps {
-                        script {
-                            echo "Docker环境内构建Node方式"
-                            nodeBuildProject()
-                        }
-                    }
-                }
 
-                stage('JavaScript构建') {
-                    when {
-                        beforeAgent true
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression { return (IS_DOCKER_BUILD == false && "${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) }
-                    }
-                    tools {
-                        // 工具名称必须在Jenkins 管理Jenkins → 全局工具配置中预配置 自动添加到PATH变量中
-                        nodejs "${NODE_VERSION}"
-                    }
-                    steps {
-                        script {
-                            nodeBuildProject()
-                        }
-                    }
-                }
 
                 stage('Docker For Java构建') {
                     when {
@@ -302,52 +273,6 @@ def call(String type = 'web-java', Map map) {
                     }
                 }
 
-                stage('Go构建') {
-                    when {
-                        beforeAgent true
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression { return ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Go) }
-                    }
-                    steps {
-                        script {
-                            goBuildProject()
-                        }
-                    }
-                }
-
-                stage('Python构建') {
-                    when {
-                        beforeAgent true
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression { return ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Python) }
-                    }
-                    /*             agent {
-                                        docker {
-                                            // Python打包环境  构建完成自动删除容器
-                                            image "cdrx/pyinstaller-linux:python3"
-                                            args ""
-                                            reuseNode true // 使用根节点
-                                        }
-                                      } */
-                    steps {
-                        script {
-                            pythonBuildProject()
-                        }
-                    }
-                }
-
-                stage('C++构建') {
-                    when {
-                        beforeAgent true
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression { return ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Cpp) }
-                    }
-                    steps {
-                        script {
-                            cppBuildProject()
-                        }
-                    }
-                }
 
                 stage('制作镜像') {
                     when {
@@ -363,44 +288,22 @@ def call(String type = 'web-java', Map map) {
                     }
                 }
 
-                stage('上传云端') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                    }
-                    steps {
-                        script {
-                            uploadRemote(Utils.getShEchoResult(this, "pwd"))
-                        }
-                    }
-                }
 
-                stage('人工审批') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return false
-                        }
-                    }
-                    steps {
-                        script {
-                            manualApproval()
-                        }
-                    }
-                }
+  //              stage('人工审批') {
+  //                  when {
+  //                      environment name: 'DEPLOY_MODE', value: GlobalVars.release
+  //                      expression {
+  //                          return false
+  //                      }
+  //                  }
+  //                  steps {
+  //                      script {
+  //                          manualApproval()
+  //                      }
+  //                  }
+  //              }
 
-                stage('单机部署') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return (IS_BLUE_GREEN_DEPLOY == false)  // 非蓝绿部署 蓝绿部署有单独步骤
-                        }
-                    }
-                    steps {
-                        script {
-                            runProject()
-                        }
-                    }
-                }
+
 
                 stage('健康检测') {
                     when {
@@ -411,7 +314,8 @@ def call(String type = 'web-java', Map map) {
                     }
                     steps {
                         script {
-                            healthCheck()
+                            //healthCheck()
+                            echo '健康检查'
                         }
                     }
                 }
@@ -422,8 +326,7 @@ def call(String type = 'web-java', Map map) {
                         // 生产环境不进行集成测试 缩减构建时间
                         not {
                             anyOf {
-                                branch 'master'
-                                branch 'prod'
+                                branch 'aaa'
                             }
                         }
                         environment name: 'DEPLOY_MODE', value: GlobalVars.release
@@ -442,53 +345,8 @@ def call(String type = 'web-java', Map map) {
                     }*/
                     steps {
                         script {
-                            integrationTesting()
-                        }
-                    }
-                }
-
-                stage('蓝绿部署') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return (IS_BLUE_GREEN_DEPLOY == true)  // 是否进行蓝绿部署
-                        }
-                    }
-                    steps {
-                        script {
-                            // 蓝绿部署是实现零停机部署最经济的方式 只有单个服务长期占用资源
-                            blueGreenDeploy()
-                        }
-                    }
-                }
-
-                stage('滚动部署') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return (IS_ROLL_DEPLOY == true) // 是否进行滚动部署
-                        }
-                    }
-                    steps {
-                        script {
-                            // 滚动部署实现多台服务按顺序更新 分布式零停机
-                            scrollToDeploy()
-                        }
-                    }
-                }
-
-                stage('灰度发布') {
-                    when {
-                        // branch 'master'
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return (IS_GRAYSCALE_DEPLOY == true) // 是否进行灰度发布
-                        }
-                    }
-                    steps {
-                        script {
-                            // 基于Nginx Ingress 灰度发布  实现多版本共存 非强制更新提升用户体验
-                            grayscaleDeploy()
+                            //integrationTesting()
+                            echo '集成测试'
                         }
                     }
                 }
@@ -508,91 +366,22 @@ def call(String type = 'web-java', Map map) {
                     }
                 }
 
-                stage('Serverless工作流') {
-                    when {
-                        // branch 'master'
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return (IS_SERVERLESS_DEPLOY == true) // 是否进行Serverless发布
-                        }
-                    }
-                    steps {
-                        script {
-                            // Serverless发布方式免运维
-                            serverlessDeploy()
-                        }
-                    }
-                }
 
-                stage('发布日志') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                    }
-                    steps {
-                        script {
-                            // 自动打tag和生成CHANGELOG.md文件
-                            gitTagLog()
-                            // 钉钉通知变更记录
-                            dingNotice(3)
-                        }
-                    }
-                }
+    //            stage('制品仓库') {
+    //                when {
+    //                    // branch 'master'
+    //                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
+    //                    expression {
+    //                        return false  // 是否进行制品仓库
+    //                    }
+    //                }
+    //                steps {
+    //                    script {
+    //                        productsWarehouse(map)
+    //                    }
+    //                }
+    //            }
 
-                stage('制品仓库') {
-                    when {
-                        // branch 'master'
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return false  // 是否进行制品仓库
-                        }
-                    }
-                    steps {
-                        script {
-                            productsWarehouse(map)
-                        }
-                    }
-                }
-
-                stage('Prometheus运维') {
-                    when {
-                        // branch 'master'
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return false  // 是否进行部署监控
-                        }
-                    }
-                    steps {
-                        script {
-                            echo "随着应用服务部署 新一代Prometheus监控 全面检测应用健康情况"
-                        }
-                    }
-                }
-
-                stage('归档') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return ("${IS_ARCHIVE}" == 'true') // 是否归档
-                        }
-                    }
-                    steps {
-                        script {
-                            // 归档
-                            archive()
-                        }
-                    }
-                }
-
-                stage('回滚版本') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.rollback
-                    }
-                    steps {
-                        script {
-                            rollbackVersion()
-                        }
-                    }
-                }
             }
 
             // post包含整个pipeline或者stage阶段完成情况
@@ -606,7 +395,6 @@ def call(String type = 'web-java', Map map) {
                 success {
                     script {
                         echo '当前成功时运行'
-                        deletePackagedOutput()
                         //deployMultiEnv()
                     }
                 }
@@ -927,156 +715,10 @@ def codeQualityAnalysis() {
 }
 
 /**
- * Node编译构建
- */
-def nodeBuildProject() {
-    monoRepoProjectDir = "" // monorepo项目所在目录 默认根目录
-    if ("${IS_MONO_REPO}" == 'true') {  // 是否monorepo单体仓库
-        monoRepoProjectDir = "${MONO_REPO_MAIN_PACKAGE}/${PROJECT_NAME}"
-    }
-
-    if ("${IS_STATIC_RESOURCE}" == 'true') { // 静态资源项目
-        if ("${IS_MONO_REPO}" == 'true') {  // 是否monorepo单体仓库
-            dir("${monoRepoProjectDir}") {
-                // MonoRepo静态文件打包
-                Web.staticResourceBuild(this)
-            }
-        } else {
-            // 静态文件打包
-            Web.staticResourceBuild(this)
-        }
-    } else { // npm编译打包项目
-        if (IS_DOCKER_BUILD == false) { // 宿主机环境情况
-            // 初始化Node环境变量
-            Node.initEnv(this)
-            // 动态切换Node版本
-            // Node.change(this, "${NODE_VERSION}".replaceAll("Node", ""))
-        }
-        // Node环境设置镜像
-        Node.setMirror(this)
-        // sh "rm -rf node_modules && npm cache clear --force"
-
-        if ("${IS_MONO_REPO}" == 'true') {  // 是否monorepo单体仓库
-            // 基于Lerna管理的Monorepo仓库打包
-            Web.monorepoBuild(this)
-        } else {
-            if ("${IS_NEED_SASS}" == 'true') { // 是否需要css预处理器sass  兼容老项目老代码
-                // 是否需要css预处理器sass处理
-                Web.needSass(this)
-            }
-
-            if (Git.isExistsChangeFile(this)) { // 自动判断是否需要下载依赖 可新增动态参数用于强制下载依赖情况
-                retry(2) {
-                    println("安装依赖 📥")
-                    sh "npm install" // --prefer-offline &> /dev/null 加速安装速度 优先离线获取包不打印日志 但有兼容性问题
-                }
-            }
-
-            timeout(time: 10, unit: 'MINUTES') {
-                try {
-                    // >/dev/null为Shell脚本运行程序不输出日志到终端 2>&1是把出错输出也定向到标准输出
-                    println("执行npm构建 🏗️  ")
-                    sh "npm run '${NPM_RUN_PARAMS}' " // >/dev/null 2>&1
-                } catch (e) {
-                    println(e.getMessage())
-                    sh "rm -rf node_modules"
-                    error("Web打包失败, 中止当前pipeline运行 ❌")
-                }
-            }
-        }
-    }
-
-    // NPM打包产出物位置
-    npmPackageLocationDir = "${IS_MONO_REPO}" == 'true' ? "${monoRepoProjectDir}/${NPM_PACKAGE_FOLDER}" : "${NPM_PACKAGE_FOLDER}"
-    npmPackageLocation = "${npmPackageLocationDir}" + ".tar.gz"
-    println(npmPackageLocation)
-    // 判断npm打包目录是否存在 打包名称规范不一致等
-/*    if (!fileExists("${npmPackageLocationDir}/")) {
-        // React框架默认打包目录是build , Angular框架默认打包目录是多层级的等  重命名到定义的目录名称
-        sh "rm -rf ${NPM_PACKAGE_FOLDER} && mv build ${NPM_PACKAGE_FOLDER}"
-    }*/
-    webPackageSize = Utils.getFolderSize(this, npmPackageLocationDir)
-    Tools.printColor(this, "Web打包成功 ✅")
-    // 压缩文件夹 易于加速传输
-    if ("${IS_MONO_REPO}" == 'true') {
-        sh "cd ${monoRepoProjectDir} && tar -zcvf ${NPM_PACKAGE_FOLDER}.tar.gz ${NPM_PACKAGE_FOLDER} >/dev/null 2>&1 "
-    } else {
-        sh "tar -zcvf ${NPM_PACKAGE_FOLDER}.tar.gz ${NPM_PACKAGE_FOLDER} >/dev/null 2>&1 "
-    }
-
-}
-
-/**
  * Maven编译构建
  */
 def mavenBuildProject() {
-    if (IS_DOCKER_BUILD == false) { // 宿主机环境情况
-        // 动态切换Maven内的对应的JDK版本
-        Java.switchJDKByJenv(this, "${JDK_VERSION}")
-    }
-    sh "mvn --version"
-    // maven如果存在多级目录 一级目录设置
-    MAVEN_ONE_LEVEL = "${MAVEN_ONE_LEVEL}".trim() != "" ? "${MAVEN_ONE_LEVEL}/" : "${MAVEN_ONE_LEVEL}".trim()
-    println("执行Maven构建 🏗️  ")
-    if ("${MAVEN_SETTING_XML}" == "") {
-        // 更快的构建工具mvnd 多个的守护进程来服务构建请求来达到并行构建的效果  源码: https://github.com/apache/maven-mvnd
-        if ("${IS_MAVEN_SINGLE_MODULE}" == 'true') { // 如果是整体单模块项目 不区分多模块也不需要指定项目模块名称
-            MAVEN_ONE_LEVEL = ""
-            // 在pom.xml文件目录下执行
-            def pomPath = Utils.getShEchoResult(this, " find . -name \"pom.xml\" ").replace("pom.xml", "")
-            sh "cd ${pomPath} && mvn clean install -Dmaven.test.skip=true"
-        } else {  // 多模块情况
-            // 单独指定模块构建 -pl指定项目名 -am 同时构建依赖项目模块 跳过测试代码
-            sh "mvn clean install -pl ${MAVEN_ONE_LEVEL}${PROJECT_NAME} -am -Dmaven.test.skip=true"
-        }
-    } else {
-        // 基于自定义setting.xml文件方式打包 如私有包等
-        Maven.packageBySettingFile(this)
-    }
-    // 获取pom文件信息
-    //Maven.getPomInfo(this)
-
-    if ("${JAVA_FRAMEWORK_TYPE}".toInteger() == GlobalVars.SpringBoot) {
-        javaPackageType = "jar"
-    } else if ("${JAVA_FRAMEWORK_TYPE}".toInteger() == GlobalVars.SpringMVC) {
-        javaPackageType = "war"
-    }
-    // Maven打包产出物位置
-    if ("${IS_MAVEN_SINGLE_MODULE}" == 'true') {
-        mavenPackageLocationDir = "target"
-    } else {
-        mavenPackageLocationDir = ("${MAVEN_ONE_LEVEL}" == "" ? "${PROJECT_NAME}" : "${MAVEN_ONE_LEVEL}${PROJECT_NAME}") + "/target"
-    }
-    mavenPackageLocation = "${mavenPackageLocationDir}" + "/*.${javaPackageType}"
-    println(mavenPackageLocation)
-    javaPackageSize = Utils.getFileSize(this, mavenPackageLocation)
-    Tools.printColor(this, "Maven打包成功 ✅")
-    // 上传部署文件到OSS
-    uploadOss()
-}
-
-/**
- * Go编译构建
- */
-def goBuildProject() {
-    Go.build(this)
-    Tools.printColor(this, "Go语言构建成功 ✅")
-}
-
-/**
- * Python编译构建
- */
-def pythonBuildProject() {
-    Python.build(this)
-    Tools.printColor(this, "Python语言构建成功 ✅")
-}
-
-/**
- * C++编译构建
- */
-def cppBuildProject() {
-    Cpp.build(this)
-    Tools.printColor(this, "C++语言构建成功 ✅")
+    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
 /**
@@ -1193,43 +835,6 @@ def manualApproval() {
 }
 
 /**
- * 部署启动运行项目
- */
-def runProject() {
-    // 初始化docker
-    initDocker()
-    try {
-        if ("${IS_PUSH_DOCKER_REPO}" == 'true') {
-            // 拉取远程仓库Docker镜像
-            Docker.pull(this, "${dockerBuildImageName}")
-        }
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER}/web " +
-                    "&& ./docker-release-web.sh '${SHELL_WEB_PARAMS_GETOPTS}' ' "
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) {
-            // 部署之前的相关操作
-            beforeRunProject()
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER} " +
-                    "&& ./docker-release.sh '${SHELL_PARAMS_GETOPTS}' '  "
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Go) {
-            // Go.deploy(this)
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER}/go " +
-                    "&& ./docker-release-go.sh '${SHELL_PARAMS_GETOPTS}' '  "
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Python) {
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER}/python " +
-                    "&& ./docker-release-python.sh '${SHELL_PARAMS_GETOPTS}' '  "
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Cpp) {
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER}/cpp " +
-                    "&& ./docker-release-cpp.sh '${SHELL_PARAMS_GETOPTS}' '  "
-        }
-    } catch (error) {
-        println error.getMessage()
-        currentBuild.result = 'FAILURE'
-        error("部署运行步骤出现异常 ❌")
-    }
-}
-
-/**
  * 健康检测
  */
 def healthCheck(params = '') { // 可选参数
@@ -1306,143 +911,7 @@ def integrationTesting() {
     }
 }
 
-/**
- * 蓝绿部署
- */
-def blueGreenDeploy() {
-    // 蓝绿部署: 好处是只用一个主单点服务资源实现部署过程中不间断提供服务
-    // 1、先启动部署一个临时服务将流量切到蓝服务器上  2、再部署真正提供服务的绿服务器  3、部署完绿服务器,销毁蓝服务器,将流量切回到绿服务器
-    // 镜像容器名称
-    dockerContainerName = "${SHELL_PROJECT_NAME}-${SHELL_PROJECT_TYPE}-${SHELL_ENV_MODE}"
-    // 先判断是否在一台服务器部署
-    if ("${IS_SAME_SERVER}" == 'false') { // 不同服务器蓝绿部署
-        def mainServerIp = remote.host // 主服务器IP
-        def blueServerIp = ""  // 蓝服务器IP
-        // 先部署一个零时服务将流量切到蓝服务器上
-        if (remote_worker_ips.isEmpty()) {
-            error("多机蓝绿部署, 请先在相关的Jenkinsfile配置从服务器ip数组remote_worker_ips参数 ❌")
-        }
-        // 循环串行执行多机分布式部署
-        remote_worker_ips.each { ip ->
-            println ip
-            remote.host = ip
-            blueServerIp = ip
-            if (params.DEPLOY_MODE == GlobalVars.rollback) {
-                uploadRemote("${archivePath}")
-            } else {
-                uploadRemote(Utils.getShEchoResult(this, "pwd"))
-            }
-            runProject()
-            if (params.IS_HEALTH_CHECK == true) {
-                MACHINE_TAG = "蓝机"
-                healthCheck()
-            }
-        }
-        // 再部署真正提供服务的绿服务器
-        remote.host = mainServerIp
-        runProject()
-        if (params.IS_HEALTH_CHECK == true) {
-            MACHINE_TAG = "绿机"
-            healthCheck()
-        }
-        // 部署完绿服务器,销毁蓝服务器,将流量切回到绿服务器
-        sh " ssh ${proxyJumpSSHText} ${remote.user}@${blueServerIp} ' docker stop ${dockerContainerName} --time=0 || true && docker rm ${dockerContainerName} || true ' "
-        // 自动配置nginx负载均衡
-        // Nginx.conf(this, "${mainServerIp}", "${SHELL_HOST_PORT}", "${blueServerIp}", "${SHELL_HOST_PORT}")
-    } else if ("${IS_SAME_SERVER}" == 'true') {  // 单机蓝绿部署 适用于服务器资源有限 又要实现零停机随时部署发布 蓝绿部署只保持一份节点服务
-        // 从服务宿主机Docker端口号  根据主服务器端口动态生成
-        def workHostPort = Integer.parseInt(SHELL_HOST_PORT) - 1000
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd) { // 同一台服务器主从部署情况 情况只针对后端项目
-            def workShellParamsGetopts = "${SHELL_PARAMS_GETOPTS}".replace("-c ${SHELL_HOST_PORT}", "-c ${workHostPort}")
-            // 先部署一个零时服务将流量切到蓝服务器上
-            try {
-                dokcerReleaseWorkerMsg = Utils.getShEchoResult(this, " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER} && ./${dockerReleaseWorkerShellName} '${workShellParamsGetopts}' ' ")
-            } catch (error) {
-                println error.getMessage()
-                currentBuild.result = 'FAILURE'
-                error("单机蓝绿部署从服务运行步骤出现异常 ❌")
-            }
-            if (params.IS_HEALTH_CHECK == true && !dokcerReleaseWorkerMsg.contains("跳过执行")) {
-                try {
-                    MACHINE_TAG = "蓝机"
-                    healthCheckUrl = "http://${remote.host}:${workHostPort}/"
-                    healthCheck(" -a ${PROJECT_TYPE} -b ${healthCheckUrl}")
-                } catch (error) {
-                    // 注意：这地方是使用的旧镜像部署，会导致一个问题，如果旧镜像本身就有问题，会导致部署失败，因为永远无法使用新镜像
-                    println error.getMessage()
-                    println("从服务器健康检测失败异常捕获, 因为可能是旧镜像导致, 继续部署主服务器 ❌")
-                }
-            }
-            // 再部署真正提供服务的绿服务器
-            runProject()
-            if (params.IS_HEALTH_CHECK == true) {
-                MACHINE_TAG = "绿机"
-                healthCheck()
-            }
-            sleep(time: 2, unit: "SECONDS") // 暂停pipeline一段时间，单位为秒
-            // 部署完绿服务器,销毁蓝服务器,将流量切回到绿服务器
-            def workDockerContainerName = "${SHELL_PROJECT_NAME}-${SHELL_PROJECT_TYPE}-worker-${SHELL_ENV_MODE}"
-            sh " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} ' docker stop ${workDockerContainerName} --time=0 || true && docker rm ${workDockerContainerName} || true ' "
-            // 自动配置nginx负载均衡
-            // Nginx.conf(this, "${remote.host}", "${SHELL_HOST_PORT}", "${remote.host}", "${workHostPort}")
-        }
-    }
-}
 
-/**
- * 滚动部署
- */
-def scrollToDeploy() {
-    // 主从架构与双主架构等  负载均衡和滚动更新worker应用服务
-    if ("${IS_SAME_SERVER}" == 'false') {   // 不同服务器滚动部署
-        def machineNum = 1
-        if (remote_worker_ips.isEmpty()) {
-            error("多机滚动部署, 请先在相关的Jenkinsfile.x文件配置其它服务器ip数组remote_worker_ips参数 ❌")
-        }
-        // 循环串行执行多机分布式部署
-        remote_worker_ips.each { ip ->
-            println ip
-            remote.host = ip
-            if (params.DEPLOY_MODE == GlobalVars.rollback) {
-                uploadRemote("${archivePath}")
-            } else {
-                uploadRemote(Utils.getShEchoResult(this, "pwd"))
-            }
-            runProject()
-            if (params.IS_HEALTH_CHECK == true) {
-                machineNum++
-                MACHINE_TAG = "${machineNum}号机" // 动态计算是几号机
-                healthCheck()
-            }
-        }
-    } else if ("${IS_SAME_SERVER}" == 'true') {  // 单机滚动部署 适用于服务器资源有限 又要实现零停机随时部署发布
-        // 从服务宿主机Docker端口号  根据主服务器端口动态生成
-        def workHostPort = Integer.parseInt(SHELL_HOST_PORT) - 1000
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd) { // 同一台服务器主从部署情况 情况只针对后端项目
-            def workShellParamsGetopts = "${SHELL_PARAMS_GETOPTS}".replace("-c ${SHELL_HOST_PORT}", "-c ${workHostPort}")
-            try {
-                sleep(time: 2, unit: "SECONDS") // 暂停pipeline一段时间，单位为秒
-                dokcerReleaseWorkerMsg = Utils.getShEchoResult(this, " ssh ${proxyJumpSSHText} ${remote.user}@${remote.host} 'cd /${DEPLOY_FOLDER} && ./${dockerReleaseWorkerShellName} '${workShellParamsGetopts}' ' ")
-            } catch (error) {
-                println error.getMessage()
-                currentBuild.result = 'FAILURE'
-                error("单机滚动部署运行步骤出现异常 ❌")
-            }
-            if (params.IS_HEALTH_CHECK == true && !dokcerReleaseWorkerMsg.contains("跳过执行")) {
-                MACHINE_TAG = "2号机"
-                healthCheckUrl = "http://${remote.host}:${workHostPort}/"
-                healthCheck(" -a ${PROJECT_TYPE} -b ${healthCheckUrl}")
-            }
-        }
-    }
-}
-
-/**
- * 基于Nginx Ingress 灰度发布  实现多版本并存 非强制用户更新提升用户体验
- */
-def grayscaleDeploy() {
-
-}
 
 /**
  * 云原生K8S部署大规模集群
@@ -1608,63 +1077,6 @@ def rollbackVersion() {
     }
 }
 
-/**
- * 归档文件
- */
-def archive() {
-    try {
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-            archiveArtifacts artifacts: "${npmPackageLocation}", onlyIfSuccessful: true
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) {
-            archiveArtifacts artifacts: "${mavenPackageLocation}", onlyIfSuccessful: true
-        }
-    } catch (error) {
-        println "归档文件异常"
-        println error.getMessage()
-    }
-}
-
-/**
- * 删除打包产出物 减少磁盘占用
- */
-def deletePackagedOutput() {
-    try {
-        //if ("${IS_PROD}" != 'true') {
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-            sh " rm -f ${npmPackageLocation} "
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) {
-            sh " rm -f ${mavenPackageLocation} "
-        }
-        //}
-    } catch (error) {
-        println "删除打包产出物异常"
-        println error.getMessage()
-    }
-}
-
-/**
- * 生成二维码 方便手机端扫描
- */
-def genQRCode() {
-    if ("${IS_GEN_QR_CODE}" == 'true') { // 是否开启二维码生成功能
-        try {
-            imageSuffixName = "png"
-            def imageName = "${PROJECT_NAME}"
-            if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-                sh "rm -f *.${imageSuffixName}"
-                QRCode.generate(this, "http://${remote.host}:${SHELL_HOST_PORT}", imageName)
-                def sourceFile = "${env.WORKSPACE}/${imageName}.${imageSuffixName}" // 源文件
-                def targetFile = "frontend/${env.JOB_NAME}/${env.BUILD_NUMBER}/${imageName}.${imageSuffixName}"
-                // 目标文件
-                qrCodeOssUrl = AliYunOss.upload(this, sourceFile, targetFile)
-                println "${qrCodeOssUrl}"
-            }
-        } catch (error) {
-            println " 生成二维码失败 ❌ "
-            println error.getMessage()
-        }
-    }
-}
 
 /**
  * 制品仓库版本管理 如Maven、Npm、Docker等以及通用仓库版本上传 支持大型项目复杂依赖关系
@@ -1759,164 +1171,4 @@ def deployMultiEnv() {
     }
 }
 
-/**
- * 钉钉通知
- * @type 0 失败 1 部署完成 2 部署之前 3 变更记录
- * @msg 自定义消息* @atMobiles 要@的手机号
- */
-def dingNotice(int type, msg = '', atMobiles = '') {
-    if ("${params.IS_DING_NOTICE}" == 'true') { // 是否钉钉通知
-        println("钉钉通知: " + params.NOTIFIER_PHONES)
-        // 格式化持续时间
-        def durationTimeString = "${currentBuild.durationString.replace(' and counting', '').replace('sec', 's')}".replace(' ', '')
-        def notifierPhone = params.NOTIFIER_PHONES.split("-")[1].trim()
-        if (notifierPhone == "oneself") { // 通知自己
-            notifierPhone = "${BUILD_USER_MOBILE}"
-        }
-        if ("${IS_ROLL_DEPLOY}" == 'false' && "${IS_BLUE_GREEN_DEPLOY}" == 'false') {
-            MACHINE_TAG = "" // 不是多节点部署不添加机器标识
-        }
-        def rollbackTag = ""
-        if (params.DEPLOY_MODE == GlobalVars.rollback) {
-            rollbackTag = "**回滚版本号: ${ROLLBACK_BUILD_ID}**" // 回滚版本添加标识
-        }
-        if (params.GIT_TAG != GlobalVars.noGit) {
-            rollbackTag = "**Git Tag构建版本: ${params.GIT_TAG}**" // Git Tag版本添加标识
-        }
-        def monorepoProjectName = ""
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd && "${IS_MONO_REPO}" == 'true') {
-            monorepoProjectName = "MonoRepo项目: ${PROJECT_NAME}"   // 单体仓库区分项目
-        }
-        def projectTypeName = ""
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-            projectTypeName = "前端"
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd) {
-            projectTypeName = "后端"
-        }
-        def envTypeMark = "内测版"  // 环境类型标志
-        if ("${IS_PROD}" == 'true') {
-            envTypeMark = "正式版"
-        }
-        def releaseEnvironment = "${NPM_RUN_PARAMS != "" ? NPM_RUN_PARAMS : SHELL_ENV_MODE}"
-        if (type == 0) { // 失败
-            if (!isHealthCheckFail) {
-                dingtalk(
-                        robot: "${DING_TALK_CREDENTIALS_ID}",
-                        type: 'MARKDOWN',
-                        title: "CI/CD ${PROJECT_TAG}${envTypeMark}${projectTypeName}流水线失败通知",
-                        text: [
-                                "### [${env.JOB_NAME}#${env.BUILD_NUMBER}](${env.BUILD_URL}) ${PROJECT_TAG}${envTypeMark}${projectTypeName}项目${msg}",
-                                "#### 请及时处理 🏃",
-                                "###### ** 流水线失败原因: [运行日志](${env.BUILD_URL}console) 👈 **",
-                                "###### Jenkins地址  [查看](${env.JENKINS_URL})   源码地址  [查看](${REPO_URL})",
-                                "###### 发布环境: ${releaseEnvironment}  持续时间: ${durationTimeString}",
-                                "###### 发布人: ${BUILD_USER}",
-                                "###### 发布时间: ${Utils.formatDate()} (${Utils.getWeek(this)})"
-                        ],
-                        at: ["${BUILD_USER_MOBILE}"]
-                )
-            }
-        } else if (type == 1) { // 部署完成
-            if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-                // 生成二维码 方便手机端扫描
-                genQRCode()
-                dingtalk(
-                        robot: "${DING_TALK_CREDENTIALS_ID}",
-                        type: 'ACTION_CARD',
-                        title: "CI/CD ${PROJECT_TAG}${envTypeMark}${projectTypeName}部署结果通知",
-                        text: [
-                                "![screenshot](${qrCodeOssUrl})",
-                                "### [${env.JOB_NAME}#${env.BUILD_NUMBER} ${PROJECT_TAG}${envTypeMark}${projectTypeName} ${MACHINE_TAG}](${env.JOB_URL})",
-                                "##### 版本信息",
-                                "- Nginx Web服务启动${msg}",
-                                "- 构建分支: ${BRANCH_NAME}   环境: ${releaseEnvironment}",
-                                "- 构建版本: ${NODE_VERSION}   包大小: ${webPackageSize}",
-                                "${monorepoProjectName}",
-                                "###### ${rollbackTag}",
-                                "###### 启动用时: ${healthCheckTimeDiff}   持续时间: ${durationTimeString}",
-                                "###### 访问URL: [${healthCheckUrl}](${healthCheckUrl})",
-                                "###### Jenkins  [运行日志](${env.BUILD_URL}console)   Git源码  [查看](${REPO_URL})",
-                                "###### 发布人: ${BUILD_USER}  构建机器: ${NODE_LABELS}",
-                                "###### 发布时间: ${Utils.formatDate()} (${Utils.getWeek(this)})"
-                        ],
-                        btns: [
-                                [
-                                        title    : "直接访问URL地址",
-                                        actionUrl: "${healthCheckUrl}"
-                                ]
-                        ],
-                        at: [isHealthCheckFail == true ? atMobiles : (notifierPhone == '110' ? '' : notifierPhone)]
-                )
-            } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd) {
-                def javaInfo = ""
-                if ("${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) {
-                    javaInfo = "构建版本: JDK${JDK_VERSION}   包大小: ${javaPackageSize}"
-                    if ("${javaOssUrl}".trim() != '') {
-                        javaInfo = javaInfo + "\n [直接下载构建${javaPackageType}包](${javaOssUrl})  👈"
-                    }
-                }
-                dingtalk(
-                        robot: "${DING_TALK_CREDENTIALS_ID}",
-                        type: 'MARKDOWN',
-                        title: "CI/CD ${PROJECT_TAG}${envTypeMark}${projectTypeName}部署结果通知",
-                        text: [
-                                "### [${env.JOB_NAME}#${env.BUILD_NUMBER} ${PROJECT_TAG}${envTypeMark}${projectTypeName} ${MACHINE_TAG}](${env.JOB_URL})",
-                                "#### · CI构建Docker部署完成 👌",
-                                "#### · 服务端项目启动运行${msg}",
-                                "###### ${rollbackTag}",
-                                "###### 启动用时: ${healthCheckTimeDiff}   持续时间: ${durationTimeString}",
-                                "###### 构建分支: ${BRANCH_NAME}   环境: ${releaseEnvironment}",
-                                "###### ${javaInfo}",
-                                "###### API地址: [${healthCheckUrl}](${healthCheckUrl})",
-                                "###### Jenkins  [运行日志](${env.BUILD_URL}console)   Git源码  [查看](${REPO_URL})", // Sonar地址  [查看](http://182.92.126.7:9000/)
-                                "###### 发布人: ${BUILD_USER}  构建机器: ${NODE_LABELS}",
-                                "###### 发布时间: ${Utils.formatDate()} (${Utils.getWeek(this)})"
-                        ],
-                        at: [isHealthCheckFail == true ? atMobiles : (notifierPhone == '110' ? '' : notifierPhone)]
-                )
-            }
-        } else if (type == 2) { // 部署之前
-            dingtalk(
-                    robot: "${DING_TALK_CREDENTIALS_ID}",
-                    type: 'MARKDOWN',
-                    title: "CI/CD ${PROJECT_TAG}${envTypeMark}${projectTypeName}部署前通知",
-                    text: [
-                            "### [${env.JOB_NAME}#${env.BUILD_NUMBER} ${envTypeMark}${projectTypeName}](${env.JOB_URL})",
-                            "#### ${PROJECT_TAG}服务部署启动中 🚀  请稍等...  ☕",
-                            "###### 发布人: ${BUILD_USER}",
-                            "###### 发布时间: ${Utils.formatDate()} (${Utils.getWeek(this)})"
-                    ],
-                    at: []
-            )
-        } else if (type == 3) { // 变更记录
-            if ("${IS_NOTICE_CHANGE_LOG}" == 'true') {
-                def gitChangeLog = changeLog.genChangeLog(this, 10)
-                if ("${gitChangeLog}" != GlobalVars.noChangeLog) {
-                    def titlePrefix = "${PROJECT_TAG} BUILD#${env.BUILD_NUMBER}"
-                    try {
-                        if ("${tagVersion}") {
-                            titlePrefix = "${PROJECT_TAG} ${tagVersion}"
-                        }
-                    } catch (e) {
-                    }
-                    dingtalk(
-                            robot: "${DING_TALK_CREDENTIALS_ID}",
-                            type: 'MARKDOWN',
-                            title: "${titlePrefix} ${envTypeMark}${projectTypeName}发布日志",
-                            text: [
-                                    "### ${titlePrefix} ${envTypeMark}${projectTypeName}发布日志 🎉",
-                                    "#### 项目: ${PROJECT_NAME}",
-                                    "#### 环境: **${projectTypeName} ${IS_PROD == 'true' ? "生产环境" : "${releaseEnvironment}内测环境"}**",
-                                    "${gitChangeLog}",
-                                    ">  👉  前往 [变更日志](${REPO_URL.replace('.git', '')}/blob/${BRANCH_NAME}/CHANGELOG.md) 查看",
-                                    "###### 发布人: ${BUILD_USER}",
-                                    "###### 发布时间: ${Utils.formatDate()} (${Utils.getWeek(this)})"
-                            ],
-                            at: []
-                    )
-                }
-            }
-        }
-    }
-}
 
