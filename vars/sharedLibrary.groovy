@@ -13,8 +13,8 @@ import shared.library.devops.GitTagLog
 def call(String type = 'web-java', Map map) {
     echo "Pipeline共享库脚本类型: ${type}, jenkins分布式节点名: 前端${map.jenkins_node_front_end} , 后端${map.jenkins_node} "
     // 应用共享方法定义
-    changeLog = new ChangeLog()
-    gitTagLog = new GitTagLog()
+//    changeLog = new ChangeLog()
+//    gitTagLog = new GitTagLog()
 
     // 初始化参数
 //    getInitParams(map)
@@ -31,7 +31,7 @@ def call(String type = 'web-java', Map map) {
 //    // 代理机或跳板机外网ip用于透传部署到目标机器
 //    proxy_jump_ip = "${map.proxy_jump_ip}"
 
-    if (type == "web-java") { // 针对标准项目
+
         pipeline {
             // 指定流水线每个阶段在哪里执行(物理机、虚拟机、Docker容器) agent any
             agent {
@@ -432,10 +432,8 @@ def call(String type = 'web-java', Map map) {
             }
         }
 
-    } else if (type == "web-java-2") {  // 注意！！！ 差异性较大的Pipeline建议区分groovy文件维护
-
     }
-}
+
 
 
 /**
