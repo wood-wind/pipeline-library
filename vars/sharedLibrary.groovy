@@ -78,14 +78,9 @@ def call(String type = 'web-java', Map map) {
                 PROJECT_TAG = "${map.project_tag}" // 项目标签或项目简称
                 MACHINE_TAG = "1号机" // 部署机器标签
                 IS_PROD = "${map.is_prod}" // 是否是生产环境
-                IS_SAME_SERVER = "${map.is_same_server}" // 是否在同一台服务器分布式部署
-                IS_BEFORE_DEPLOY_NOTICE = "${map.is_before_deploy_notice}" // 是否进行部署前通知
-                IS_GRACE_SHUTDOWN = "${map.is_grace_shutdown}" // 是否进行优雅停机
                 IS_NEED_SASS = "${map.is_need_sass}" // 是否需要css预处理器sass
                 IS_AUTO_TRIGGER = false // 是否是自动触发构建
                 IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
-                IS_INTEGRATION_TESTING = false // 是否进集成测试
-                IS_NOTICE_CHANGE_LOG = "${map.is_notice_change_log}" // 是否通知变更记录
             }
 
             options {
@@ -132,7 +127,7 @@ def call(String type = 'web-java', Map map) {
                     steps {
                         script {
                             echo 'checkout(scm)'
-                            checkout(scm)
+                            //checkout(scm)
     //                        pullProjectCode()
     //                        pullCIRepo()
                             /*  parallel( // 步骤内并发执行
@@ -191,15 +186,7 @@ def call(String type = 'web-java', Map map) {
                     when {
                         beforeAgent true
                         environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression { return (IS_DOCKER_BUILD == true && "${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) }
-                    }
-                    agent {
-                        docker {
-                            // JDK MAVEN 环境  构建完成自动删除容器
-                            image "maven:${map.maven.replace('Maven', '')}-openjdk-${JDK_VERSION}"
-                            args " -v /var/cache/maven/.m2:/root/.m2 "
-                            reuseNode true // 使用根节点
-                        }
+                    //    expression { return (IS_DOCKER_BUILD == true }
                     }
                     steps {
                         script {
@@ -207,35 +194,17 @@ def call(String type = 'web-java', Map map) {
                         }
                     }
                 }
-                stage('Java构建') {
-                    when {
-                        beforeAgent true
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression { return (IS_DOCKER_BUILD == false && "${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) }
-                    }
-                    tools {
-                        // 工具名称必须在Jenkins 管理Jenkins → 全局工具配置中预配置 自动添加到PATH变量中
-                        maven "${map.maven}"
-                        jdk "${JDK_VERSION}"
-                    }
-                    steps {
-                        script {
-                            mavenBuildProject()
-                        }
-                    }
-                }
-
 
                 stage('制作镜像') {
                     when {
                         beforeAgent true
-                        expression { return ("${IS_PUSH_DOCKER_REPO}" == 'true') }
+            //            expression { return ("${IS_PUSH_DOCKER_REPO}" == 'true') }
                         environment name: 'DEPLOY_MODE', value: GlobalVars.release
                     }
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
-                            buildImage()
+                            parallel parallelStagesMap
                         }
                     }
                 }
@@ -361,7 +330,7 @@ def getInitParams(map) {
     NPM_RUN_PARAMS = jsonParams.NPM_RUN_PARAMS ? jsonParams.NPM_RUN_PARAMS.trim() : "" // npm run [test]的前端项目参数
 
     // 是否使用Docker容器环境方式构建打包 false使用宿主机环境
-    IS_DOCKER_BUILD = jsonParams.IS_DOCKER_BUILD ? jsonParams.IS_DOCKER_BUILD : true
+    IS_DOCKER_BUILD =  true
     IS_BLUE_GREEN_DEPLOY = jsonParams.IS_BLUE_GREEN_DEPLOY ? jsonParams.IS_BLUE_GREEN_DEPLOY : false // 是否蓝绿部署
     IS_ROLL_DEPLOY = jsonParams.IS_ROLL_DEPLOY ? jsonParams.IS_ROLL_DEPLOY : false // 是否滚动部署
     IS_GRAYSCALE_DEPLOY = jsonParams.IS_GRAYSCALE_DEPLOY ? jsonParams.IS_GRAYSCALE_DEPLOY : false // 是否灰度发布
@@ -563,13 +532,31 @@ def mavenBuildProject() {
  * 制作镜像
  * 可通过ssh在不同机器上构建镜像
  */
-def buildImage() {
-    // 定义镜像唯一构建名称
-    dockerBuildImageName = "${SHELL_PROJECT_NAME}-${SHELL_PROJECT_TYPE}-${SHELL_ENV_MODE}"
-    // Docker多阶段镜像构建处理
-    Docker.multiStageBuild(this, "${DOCKER_MULTISTAGE_BUILD_IMAGES}")
-    // 构建Docker镜像  只构建一次
-    Docker.build(this, "${dockerBuildImageName}")
+def parallelStagesMap = modules.collectEntries { key, value ->
+    ["build && push  ${key}": generateStage(key, value)]
+}
+
+
+def generateStage(key, value) {
+    return {
+        stage('build image ' + key) {
+            container('maven') {
+                echo 'build  ${key}  ${value}  ' + key + '  ' + value
+                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+                    sh 'docker pull ${REGISTRY}/halosee/nginx:stable-alpine'
+                    sh 'docker pull ${REGISTRY}/halosee/node:12-alpine'
+                }
+                sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + value + '/'
+                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+                    sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION'
+                    sh 'docker tag  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
+                    sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
+                }
+            }
+        }
+    }
 }
 
 /**
