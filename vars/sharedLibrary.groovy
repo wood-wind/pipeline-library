@@ -81,6 +81,7 @@ def call(String type = 'web-java', Map map,modules) {
                 IS_NEED_SASS = "${map.is_need_sass}" // 是否需要css预处理器sass
                 IS_AUTO_TRIGGER = false // 是否是自动触发构建
                 IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
+                SETTING_FILE="${map.SETTING_FILE}"
             }
 
             options {
