@@ -189,8 +189,10 @@ def call(String type = 'web-java', Map map) {
                     //    expression { return (IS_DOCKER_BUILD == true }
                     }
                     steps {
-                        script {
-                            mavenBuildProject()
+                        container('maven') {
+                            script {
+                                mavenBuildProject()
+                            }
                         }
                     }
                 }
