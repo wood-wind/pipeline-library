@@ -191,7 +191,7 @@ def call(String type = 'web-java', Map map,Modules modules) {
                     steps {
                         container('maven') {
                             script {
-                                echo ${Modules}
+                                echo ${modules}
                                 mavenBuildProject()
                             }
                         }
@@ -528,7 +528,7 @@ def codeQualityAnalysis() {
  * Maven编译构建
  */
 def mavenBuildProject() {
-    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
+    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${modules}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
 /**
@@ -544,7 +544,7 @@ def generateStage(key, value) {
     return {
         stage('build image ' + key) {
             container('maven') {
-                echo 'build  ${key}  ${value}  ' + key + '  ' + value
+                echo 'build   ' + key + '  ' + value
                 withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                     sh 'docker pull ${REGISTRY}/halosee/nginx:stable-alpine'
