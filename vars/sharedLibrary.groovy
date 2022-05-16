@@ -107,7 +107,7 @@ def call(String type = 'web-java', Map map,modules) {
                     steps {
                         script {
                             echo 'checkout(scm)'
-                            //checkout(scm)
+                            checkout(scm)
                         }
                     }
                 }
@@ -175,7 +175,7 @@ def call(String type = 'web-java', Map map,modules) {
                         container('maven') {
                             script {
                                 //echo ${modules}
-                                mavenBuildProject()
+                                mavenBuildProject(modules)
                             }
                         }
                     }
@@ -510,7 +510,7 @@ def codeQualityAnalysis() {
 /**
  * Maven编译构建
  */
-def mavenBuildProject() {
+def mavenBuildProject(modules) {
     sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${modules}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
