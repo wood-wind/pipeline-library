@@ -230,6 +230,12 @@ class Utils implements Serializable {
             ctx.sh "${gradleHome}/bin/gradle ${tasks}"
         }
     }*/
-
+      static def tagVersion(){
+          def pomFile = readFile(file: 'pom.xml')
+          def pom = new XmlParser().parseText(pomFile)
+          def gavMap = [:]
+          def TAG_VERSION =  pom['version'].text().trim()
+          return TAG_VERSION
+      }
 
 }

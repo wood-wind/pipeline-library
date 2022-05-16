@@ -1,4 +1,5 @@
 #!groovy
+
 import shared.library.GlobalVars
 import shared.library.Utils
 import shared.library.common.*
@@ -14,12 +15,7 @@ def modules = [
         "api-develop" : "api-develop"
 ]
 
-/**
- * @author 潘维吉
- * @description 通用核心共享Pipeline脚本库
- * 针对大前端Web和服务端Java、Go、Python、C++等多语言项目
- */
-def call(Map map,Modules modules) {
+def call(Map map) {
     echo "Pipeline共享库脚本类型: web-java, jenkins分布式节点名: 前端${map.jenkins_node_front_end} , 后端${map.jenkins_node} "
     // 应用共享方法定义
 //    changeLog = new ChangeLog()
@@ -127,10 +123,7 @@ def call(Map map,Modules modules) {
                 stage("fetch pom version") {
                     steps {
                         script {
-                            def pomFile = readFile(file: 'pom.xml')
-                            def pom = new XmlParser().parseText(pomFile)
-                            def gavMap = [:]
-                            env.TAG_VERSION =  pom['version'].text().trim()
+                            env.TAG_VERSION =  Utils.tagVersion()
                             sh 'env'
                         }
                     }
