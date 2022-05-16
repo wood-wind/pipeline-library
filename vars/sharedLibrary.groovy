@@ -191,19 +191,19 @@ def call(Map map) {
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
-//                            def modules = [
-//                                    "gateway"     : "gateway",
-//                                    "portal"      : "portal",
-//                                    "uc"          : "uc",
-//                                    "form"        : "form",
-//                                    "bpm-model"   : "bpm-model",
-//                                    "bpm-runtime" : "bpm-runtime",
-//                                    "blade-visual": "blade-visual",
-//                                    "api-develop" : "api-develop"
-//                            ]
+                            def modules = [
+                                    "gateway"     : "gateway",
+                                    "portal"      : "portal",
+                                    "uc"          : "uc",
+                                    "form"        : "form",
+                                    "bpm-model"   : "bpm-model",
+                                    "bpm-runtime" : "bpm-runtime",
+                                    "blade-visual": "blade-visual",
+                                    "api-develop" : "api-develop"
+                            ]
 //                            modules.collectEntries { key -> [("loop module ${key}"): generateStage(key)]
                                 echo 'build modules images'
-                            def parallelStagesMap = MODULES.collectEntries { key, value ->
+                            def parallelStagesMap = modules.collectEntries { key, value ->
                                 ["build && push  ${key}": generateStage(key, value)]
                             }
                                 parallel parallelStagesMap
