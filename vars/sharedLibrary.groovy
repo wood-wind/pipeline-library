@@ -82,6 +82,10 @@ def call(String type = 'web-java', Map map,modules) {
                 IS_AUTO_TRIGGER = false // 是否是自动触发构建
                 IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
                 SETTING_FILE="${map.SETTING_FILE}"
+
+                COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
+                COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse  HEAD')
+                CREATE_TIME = sh(returnStdout: true, script: 'date "+%Y-%m-%d %H:%M:%S"')
             }
 
             options {
@@ -89,10 +93,6 @@ def call(String type = 'web-java', Map map,modules) {
                 retry(0)
                 //超时时间 job会自动被终止
                 timeout(time: 30, unit: 'MINUTES')
-                //保持构建的最大个数
-    //            buildDiscarder(logRotator(numToKeepStr: "${map.build_num_keep}", artifactNumToKeepStr: "${map.build_num_keep}"))
-                //控制台输出增加时间戳
-    //            timestamps()
                 //不允许同一个job同时执行流水线,可被用来防止同时访问共享资源等
                 disableConcurrentBuilds()
                 //如果某个stage为unstable状态，则忽略后面的任务，直接退出
@@ -100,44 +100,27 @@ def call(String type = 'web-java', Map map,modules) {
                 //安静的时期 设置管道的静默时间段（以秒为单位），以覆盖全局默认值
                 quietPeriod(3)
                 //删除隐式checkout scm语句
-    //            skipDefaultCheckout()
-                //日志颜色
-    //            ansiColor('xterm')
-                //当agent为Docker或Dockerfile时, 指定在同一个jenkins节点上,每个stage都分别运行在一个新容器中,而不是同一个容器
-                //newContainerPerStage()
+                skipDefaultCheckout()
             }
 
             stages {
-                stage('初始化') {
-                    steps {
-                        script {
-                            echo '初始化'
-                            //initInfo()
-                            //getShellParams(map)
-                        }
-                    }
-                }
-
-                stage('获取代码') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                    }
-                    /*   tools {
-                               git "Default"
-                         } */
+                stage('checkout scm') {
                     steps {
                         script {
                             echo 'checkout(scm)'
                             //checkout(scm)
-    //                        pullProjectCode()
-    //                        pullCIRepo()
-                            /*  parallel( // 步骤内并发执行
-                                     'CI/CD代码': {
-                                         pullCIRepo()
-                                     },
-                                     '项目代码': {
-                                         pullProjectCode()
-                                     })*/
+                        }
+                    }
+                }
+
+                stage("fetch pom version") {
+                    steps {
+                        script {
+                            def pomFile = readFile(file: 'pom.xml')
+                            def pom = new XmlParser().parseText(pomFile)
+                            def gavMap = [:]
+                            env.TAG_VERSION =  pom['version'].text().trim()
+                            sh 'env'
                         }
                     }
                 }
@@ -230,51 +213,51 @@ def call(String type = 'web-java', Map map,modules) {
 
 
 
-                stage('健康检测') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return (params.IS_HEALTH_CHECK == true && IS_BLUE_GREEN_DEPLOY == false)
-                        }
-                    }
-                    steps {
-                        script {
-                            //healthCheck()
-                            echo '健康检查'
-                        }
-                    }
-                }
+    //            stage('健康检测') {
+    //                when {
+    //                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
+    //                    expression {
+    //                        return (params.IS_HEALTH_CHECK == true && IS_BLUE_GREEN_DEPLOY == false)
+    //                    }
+    //                }
+    //                steps {
+    //                    script {
+    //                        //healthCheck()
+    //                        echo '健康检查'
+    //                    }
+    //                }
+    //            }
 
-                stage('集成测试') {
-                    when {
-                        beforeAgent true
-                        // 生产环境不进行集成测试 缩减构建时间
-                        not {
-                            anyOf {
-                                branch 'aaa'
-                            }
-                        }
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            // 是否进行集成测试  是否存在postman_collection.json文件才进行API集成测试  fileExists("_test/postman/postman_collection.json") == true
-                            return ("${IS_INTEGRATION_TESTING}" == 'true' && "${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd
-                                    && "${AUTO_TEST_PARAM}" != "" && IS_BLUE_GREEN_DEPLOY == false)
-                        }
-                    }
-/*                    agent {
-                        docker {
-                            // Node环境  构建完成自动删除容器
-                            image "node:${NODE_VERSION}"
-                            reuseNode true // 使用根节点
-                        }
-                    }*/
-                    steps {
-                        script {
-                            //integrationTesting()
-                            echo '集成测试'
-                        }
-                    }
-                }
+   //             stage('集成测试') {
+   //                 when {
+   //                     beforeAgent true
+   //                     // 生产环境不进行集成测试 缩减构建时间
+   //                     not {
+   //                         anyOf {
+   //                             branch 'aaa'
+   //                         }
+   //                     }
+   //                     environment name: 'DEPLOY_MODE', value: GlobalVars.release
+   //                     expression {
+   //                         // 是否进行集成测试  是否存在postman_collection.json文件才进行API集成测试  fileExists("_test/postman/postman_collection.json") == true
+   //                         return ("${IS_INTEGRATION_TESTING}" == 'true' && "${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd
+   //                                 && "${AUTO_TEST_PARAM}" != "" && IS_BLUE_GREEN_DEPLOY == false)
+   //                     }
+   //                 }
+/* //                   agent {
+   //                     docker {
+   //                         // Node环境  构建完成自动删除容器
+   //                         image "node:${NODE_VERSION}"
+   //                         reuseNode true // 使用根节点
+   //                     }
+   //                 }*/
+   //                 steps {
+   //                     script {
+   //                         //integrationTesting()
+   //                         echo '集成测试'
+   //                     }
+   //                 }
+   //             }
 
                 stage('Kubernetes云原生') {
                     when {
@@ -529,8 +512,7 @@ def codeQualityAnalysis() {
  * Maven编译构建
  */
 def mavenBuildProject() {
-    sh 'mvnd'
-  //  sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${modules}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
+    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${modules}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
 /**
