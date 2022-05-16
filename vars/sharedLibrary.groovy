@@ -79,7 +79,7 @@ def call(Map map) {
                 IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
                 SETTING_FILE="${map.SETTING_FILE}"
 
-                MODULES = "${map.MODULES}"
+                MODULES = "${map.modules}"
                 COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
                 COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse  HEAD')
                 CREATE_TIME = sh(returnStdout: true, script: 'date "+%Y-%m-%d %H:%M:%S"')
@@ -293,17 +293,6 @@ def call(Map map) {
 
     }
 
-
-def modules = [
-        "gateway"     : "gateway",
-        "portal"      : "portal",
-        "uc"          : "uc",
-        "form"        : "form",
-        "bpm-model"   : "bpm-model",
-        "bpm-runtime" : "bpm-runtime",
-        "blade-visual": "blade-visual",
-        "api-develop" : "api-develop"
-]
 
 /**
  *  获取初始化参数方法
@@ -519,8 +508,8 @@ def codeQualityAnalysis() {
 /**
  * Maven编译构建
  */
-def mavenBuildProject(modules) {
-    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${modules}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
+def mavenBuildProject(MODULES) {
+    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
 def parallelStagesMap = modules.collectEntries { key, value ->
