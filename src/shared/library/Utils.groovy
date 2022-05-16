@@ -5,7 +5,7 @@ package shared.library
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-
+import hudson.model.*;
 //@Grab('org.apache.commons:commons-lang3:3.10+')
 //import org.apache.commons.lang.time.StopWatch
 
@@ -230,11 +230,11 @@ class Utils implements Serializable {
             ctx.sh "${gradleHome}/bin/gradle ${tasks}"
         }
     }*/
-      static def tagVersion(){
+      static def tagVersion(String TAG_VERSION=''){
           def pomFile = readFile(file: 'pom.xml')
           def pom = new XmlParser().parseText(pomFile)
           def gavMap = [:]
-          def TAG_VERSION =  pom['version'].text().trim()
+          TAG_VERSION =  pom['version'].text().trim()
           return TAG_VERSION
       }
 
