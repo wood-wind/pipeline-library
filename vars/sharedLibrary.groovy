@@ -190,8 +190,8 @@ def call(Map map) {
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
-                            MODULES.eachWithIndex { MODULES, int i ->
-                                [("loop modules ${i}"):generateStage(i)]
+                            sh 'echo "111 $MODULES"'
+                            MODULES.collectEntries { key -> [("loop module ${key}"):generateStage(key)]
                             }
                             //                    parallel parallelStagesMap
                         }
@@ -521,11 +521,11 @@ def mavenBuildProject(MODULES) {
 //}
 
 
-def generateStage(key, value) {
+def generateStage(key) {
     return {
         stage('build image ' + key) {
             container('maven') {
-                echo 'build   ' + key + '  ' + value
+                echo 'build   ' + key
                 withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                     sh 'docker pull ${REGISTRY}/halosee/nginx:stable-alpine'
