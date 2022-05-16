@@ -180,7 +180,7 @@ def call(Map map) {
                     }
                 }
 
-                stage('制作镜像') {
+                stage('parallel build modules images') {
                     when {
                         beforeAgent true
             //            expression { return ("${IS_PUSH_DOCKER_REPO}" == 'true') }
@@ -189,7 +189,10 @@ def call(Map map) {
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
-                            parallel parallelStagesMap
+                            MODULES.eachWithIndex { MODULES, int i ->
+                                [("loop modules ${i}"):generateStage(i)]
+                            }
+                            //                    parallel parallelStagesMap
                         }
                     }
                 }
@@ -512,7 +515,7 @@ def mavenBuildProject(MODULES) {
     sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
-def parallelStagesMap = modules.collectEntries { key, value ->
+def parallelStagesMap = MODULES.collectEntries { key, value ->
     ["build && push  ${key}": generateStage(key, value)]
 }
 
