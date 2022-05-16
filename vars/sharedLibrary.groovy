@@ -183,7 +183,7 @@ def call(String type = 'web-java', Map map,Modules modules) {
                 }
 
                 stage('制作镜像') {
-                    when {.............
+                    when {
                         beforeAgent true
             //            expression { return ("${IS_PUSH_DOCKER_REPO}" == 'true') }
                         environment name: 'DEPLOY_MODE', value: GlobalVars.release
