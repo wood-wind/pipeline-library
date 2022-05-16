@@ -190,29 +190,20 @@ def call(Map map) {
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
- //                         MODULES.collectEntries { key -> [("loop module ${key}"):generateStage(key)]
-                            def m = MODULES.split(",").findall { it }.collect { it.trim() }
-                            m.eachWithIndex { MODULE, i ->
-                                stage("MODULE ${i}"){
-                                    echo "pre stage MODULE: ${MODULE} ${i}"
-                                }
-                                stage("loop MODULE ${i}"){
-                                    sh 'echo "111 $MODULES"'
-                                    def jobs = [:]
-                                    m.eachWithIndex { module, key ->
-                                        jobs["${key}"] = {
-                                            node(module) {
-                                                stage("run ${key}") {
-                                                    echo "$module"-"${key}"
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            def modules = [
+                                    "gateway"     : "gateway",
+                                    "portal"      : "portal",
+                                    "uc"          : "uc",
+                                    "form"        : "form",
+                                    "bpm-model"   : "bpm-model",
+                                    "bpm-runtime" : "bpm-runtime",
+                                    "blade-visual": "blade-visual",
+                                    "api-develop" : "api-develop"
+                            ]
+                            modules.collectEntries { key -> [("loop module ${key}"):generateStage(key)]
 
-                            }
                             //                    parallel parallelStagesMap
-                        }
+                            }
                         }
                     }
 
