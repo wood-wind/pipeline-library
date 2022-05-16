@@ -79,6 +79,7 @@ def call(Map map) {
                 IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
                 SETTING_FILE="${map.SETTING_FILE}"
 
+                IS_K8S_DEPLOY = "${map.is_k8s_deploy}"
                 MODULES = "${map.modules}"
                 COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
                 COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse  HEAD')
