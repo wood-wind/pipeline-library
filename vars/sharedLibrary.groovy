@@ -174,7 +174,6 @@ def call(Map map) {
                     steps {
                         container('maven') {
                             script {
-                                echo ${modules}
                                 mavenBuildProject(modules)
                             }
                         }
