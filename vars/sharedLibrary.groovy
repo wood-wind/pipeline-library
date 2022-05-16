@@ -191,7 +191,17 @@ def call(Map map) {
                     steps {
                         script {
                             sh 'echo "111 $MODULES"'
-                            MODULES.collectEntries { key -> [("loop module ${key}"):generateStage(key)]
+                            def jobs = [:]
+   //                         MODULES.collectEntries { key -> [("loop module ${key}"):generateStage(key)]
+                            modules.eachWithIndex { module, key ->
+                                jobs["${key}"] = {
+                                    node(module) {
+                                        stage("run ${key}") {
+                                            echo "$module"-"${key}"
+                                        }
+                                    }
+                                }
+                            }
                             }
                             //                    parallel parallelStagesMap
                         }
