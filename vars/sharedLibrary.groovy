@@ -3,13 +3,24 @@ import shared.library.GlobalVars
 import shared.library.Utils
 import shared.library.common.*
 
+def modules = [
+        "gateway"     : "gateway",
+        "portal"      : "portal",
+        "uc"          : "uc",
+        "form"        : "form",
+        "bpm-model"   : "bpm-model",
+        "bpm-runtime" : "bpm-runtime",
+        "blade-visual": "blade-visual",
+        "api-develop" : "api-develop"
+]
+
 /**
  * @author 潘维吉
  * @description 通用核心共享Pipeline脚本库
  * 针对大前端Web和服务端Java、Go、Python、C++等多语言项目
  */
-def call(String type = 'web-java', Map map,Modules modules) {
-    echo "Pipeline共享库脚本类型: ${type}, jenkins分布式节点名: 前端${map.jenkins_node_front_end} , 后端${map.jenkins_node} "
+def call(Map map,Modules modules) {
+    echo "Pipeline共享库脚本类型: web-java, jenkins分布式节点名: 前端${map.jenkins_node_front_end} , 后端${map.jenkins_node} "
     // 应用共享方法定义
 //    changeLog = new ChangeLog()
 //    gitTagLog = new GitTagLog()
