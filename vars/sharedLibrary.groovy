@@ -4,16 +4,6 @@ import shared.library.GlobalVars
 import shared.library.Utils
 import shared.library.common.*
 
-def modules = [
-        "gateway"     : "gateway",
-        "portal"      : "portal",
-        "uc"          : "uc",
-        "form"        : "form",
-        "bpm-model"   : "bpm-model",
-        "bpm-runtime" : "bpm-runtime",
-        "blade-visual": "blade-visual",
-        "api-develop" : "api-develop"
-]
 
 def call(Map map) {
     echo "Pipeline共享库脚本类型: web-java, jenkins分布式节点名: 前端${map.jenkins_node_front_end} , 后端${map.jenkins_node} "
@@ -300,6 +290,16 @@ def call(Map map) {
     }
 
 
+def modules = [
+        "gateway"     : "gateway",
+        "portal"      : "portal",
+        "uc"          : "uc",
+        "form"        : "form",
+        "bpm-model"   : "bpm-model",
+        "bpm-runtime" : "bpm-runtime",
+        "blade-visual": "blade-visual",
+        "api-develop" : "api-develop"
+]
 
 /**
  *  获取初始化参数方法
