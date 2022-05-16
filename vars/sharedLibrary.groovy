@@ -105,7 +105,7 @@ def call(Map map) {
                     steps {
                         script {
                             echo 'checkout(scm)'
-                            checkout(scm)
+                        //    checkout(scm)
                         }
                     }
                 }
@@ -174,7 +174,8 @@ def call(Map map) {
                     steps {
                         container('maven') {
                             script {
-                                mavenBuildProject(MODULES)
+                                sh 'echo "build"'
+                            //    mavenBuildProject(MODULES)
                             }
                         }
                     }
@@ -515,9 +516,9 @@ def mavenBuildProject(MODULES) {
     sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
-def parallelStagesMap = MODULES.collectEntries { key, value ->
-    ["build && push  ${key}": generateStage(key, value)]
-}
+//def parallelStagesMap = MODULES.collectEntries { key, value ->
+//    ["build && push  ${key}": generateStage(key, value)]
+//}
 
 
 def generateStage(key, value) {
