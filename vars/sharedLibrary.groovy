@@ -529,7 +529,8 @@ def codeQualityAnalysis() {
  * Maven编译构建
  */
 def mavenBuildProject() {
-    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package   -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
+    sh 'mvnd'
+  //  sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${modules}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
 /**
