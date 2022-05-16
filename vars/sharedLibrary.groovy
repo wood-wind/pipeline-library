@@ -38,7 +38,7 @@ def call(Map map) {
             //agent { label "${map.jenkins_node}" }
 
             parameters {
-                choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1. '+GlobalVars.release + '发布 2. '+ GlobalVars.dev +'dev分支')
+                choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1.release 2.dev分支')
                 choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
                 choice(name: 'IS_DEPLOY', choices: ['Y',''], description: '是否部署,Y或置空')
    //             gitParameter(name: 'GIT_BRANCH', type: 'PT_BRANCH', defaultValue: "${BRANCH_NAME}", selectedValue: "DEFAULT",
@@ -79,7 +79,7 @@ def call(Map map) {
                 IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
                 SETTING_FILE="${map.SETTING_FILE}"
 
-                //MODULES = $MODULES
+                MODULES = "${map.MODULES}"
                 COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
                 COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse  HEAD')
                 CREATE_TIME = sh(returnStdout: true, script: 'date "+%Y-%m-%d %H:%M:%S"')
@@ -174,7 +174,7 @@ def call(Map map) {
                     steps {
                         container('maven') {
                             script {
-                                mavenBuildProject(modules)
+                                mavenBuildProject(gateway)
                             }
                         }
                     }
@@ -523,10 +523,6 @@ def mavenBuildProject(modules) {
     sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${modules}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
-/**
- * 制作镜像
- * 可通过ssh在不同机器上构建镜像
- */
 def parallelStagesMap = modules.collectEntries { key, value ->
     ["build && push  ${key}": generateStage(key, value)]
 }
