@@ -76,7 +76,6 @@ def call(String type = 'web-java', Map map,modules) {
                 DOCKER_REPO_NAMESPACE = "${map.docker_repo_namespace}" // docker仓库命名空间名称
                 DOCKER_MULTISTAGE_BUILD_IMAGES = "${map.docker_multistage_build_images}" // Dockerfile多阶段构建 镜像名称
                 PROJECT_TAG = "${map.project_tag}" // 项目标签或项目简称
-                MACHINE_TAG = "1号机" // 部署机器标签
                 IS_PROD = "${map.is_prod}" // 是否是生产环境
                 IS_NEED_SASS = "${map.is_need_sass}" // 是否需要css预处理器sass
                 IS_AUTO_TRIGGER = false // 是否是自动触发构建
@@ -175,7 +174,7 @@ def call(String type = 'web-java', Map map,modules) {
                     steps {
                         container('maven') {
                             script {
-                                echo ${modules}
+                                //echo ${modules}
                                 mavenBuildProject()
                             }
                         }
