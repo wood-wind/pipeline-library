@@ -203,6 +203,9 @@ def call(Map map) {
 //                            ]
 //                            modules.collectEntries { key -> [("loop module ${key}"): generateStage(key)]
                                 echo 'build modules images'
+                            def parallelStagesMap = MODULES.collectEntries { key, value ->
+                                ["build && push  ${key}": generateStage(key, value)]
+                            }
                                 parallel parallelStagesMap
                             }
                         }
@@ -529,9 +532,9 @@ def mavenBuildProject(MODULES) {
     sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
-def parallelStagesMap = MODULES.collectEntries { key, value ->
-    ["build && push  ${key}": generateStage(key, value)]
-}
+//def parallelStagesMap = MODULES.collectEntries { key, value ->
+//    ["build && push  ${key}": generateStage(key, value)]
+//}
 
 
 def generateStage(key) {
