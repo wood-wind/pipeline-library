@@ -191,19 +191,19 @@ def call(Map map) {
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
-                            def modules = [
-                                    "gateway"     : "gateway",
-                                    "portal"      : "portal",
-                                    "uc"          : "uc",
-                                    "form"        : "form",
-                                    "bpm-model"   : "bpm-model",
-                                    "bpm-runtime" : "bpm-runtime",
-                                    "blade-visual": "blade-visual",
-                                    "api-develop" : "api-develop"
-                            ]
-                            modules.collectEntries { key -> [("loop module ${key}"): generateStage(key)]
-
-                                //                    parallel parallelStagesMap
+//                            def modules = [
+//                                    "gateway"     : "gateway",
+//                                    "portal"      : "portal",
+//                                    "uc"          : "uc",
+//                                    "form"        : "form",
+//                                    "bpm-model"   : "bpm-model",
+//                                    "bpm-runtime" : "bpm-runtime",
+//                                    "blade-visual": "blade-visual",
+//                                    "api-develop" : "api-develop"
+//                            ]
+//                            modules.collectEntries { key -> [("loop module ${key}"): generateStage(key)]
+                                echo 'build modules images'
+                                parallel parallelStagesMap
                             }
                         }
                     }
@@ -529,9 +529,9 @@ def mavenBuildProject(MODULES) {
     sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
 }
 
-//def parallelStagesMap = MODULES.collectEntries { key, value ->
-//    ["build && push  ${key}": generateStage(key, value)]
-//}
+def parallelStagesMap = MODULES.collectEntries { key, value ->
+    ["build && push  ${key}": generateStage(key, value)]
+}
 
 
 def generateStage(key) {
