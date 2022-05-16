@@ -8,7 +8,7 @@ import shared.library.common.*
  * @description 通用核心共享Pipeline脚本库
  * 针对大前端Web和服务端Java、Go、Python、C++等多语言项目
  */
-def call(String type = 'web-java', Map map,MODULES modules) {
+def call(String type = 'web-java', Map map,Modules modules) {
     echo "Pipeline共享库脚本类型: ${type}, jenkins分布式节点名: 前端${map.jenkins_node_front_end} , 后端${map.jenkins_node} "
     // 应用共享方法定义
 //    changeLog = new ChangeLog()
@@ -183,7 +183,7 @@ def call(String type = 'web-java', Map map,MODULES modules) {
                 }
 
                 stage('制作镜像') {
-                    when {
+                    when {.............
                         beforeAgent true
             //            expression { return ("${IS_PUSH_DOCKER_REPO}" == 'true') }
                         environment name: 'DEPLOY_MODE', value: GlobalVars.release
