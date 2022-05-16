@@ -206,7 +206,7 @@ def call(Map map) {
                             //                    parallel parallelStagesMap
                         }
                     }
-                }
+
 
 
   //              stage('人工审批') {
@@ -304,6 +304,7 @@ def call(Map map) {
 
             }
     }
+}
 
 
 
