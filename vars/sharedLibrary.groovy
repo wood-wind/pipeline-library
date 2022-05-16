@@ -184,7 +184,7 @@ def call(Map map) {
                 stage('parallel build modules images') {
                     when {
                         beforeAgent true
-            //            expression { return ("${IS_PUSH_DOCKER_REPO}" == 'true') }
+                        //            expression { return ("${IS_PUSH_DOCKER_REPO}" == 'true') }
                         environment name: 'DEPLOY_MODE', value: GlobalVars.release
                     }
                     //agent { label "slave-jdk11-prod" }
@@ -200,12 +200,13 @@ def call(Map map) {
                                     "blade-visual": "blade-visual",
                                     "api-develop" : "api-develop"
                             ]
-                            modules.collectEntries { key -> [("loop module ${key}"):generateStage(key)]
+                            modules.collectEntries { key -> [("loop module ${key}"): generateStage(key)]
 
-                            //                    parallel parallelStagesMap
+                                //                    parallel parallelStagesMap
                             }
                         }
                     }
+                }
 
 
 
