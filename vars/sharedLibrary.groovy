@@ -190,16 +190,16 @@ def call(Map map) {
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
-
  //                         MODULES.collectEntries { key -> [("loop module ${key}"):generateStage(key)]
-                            MODULES.eachWithIndex { MODULE, i ->
+                            def m = MODULES.split(",").findall { it }.collect { it.trim() }
+                            m.eachWithIndex { MODULE, i ->
                                 stage("MODULE ${i}"){
                                     echo "pre stage MODULE: ${MODULE} ${i}"
                                 }
                                 stage("loop MODULE ${i}"){
                                     sh 'echo "111 $MODULES"'
                                     def jobs = [:]
-                                    modules.eachWithIndex { module, key ->
+                                    m.eachWithIndex { module, key ->
                                         jobs["${key}"] = {
                                             node(module) {
                                                 stage("run ${key}") {
