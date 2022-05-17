@@ -67,13 +67,13 @@ def call(Map map) {
             stage("fetch pom version") {
                 steps {
                     script {
-                        def pomFile = readFile(file: 'pom.xml')
-                        def pom = new XmlParser().parseText(pomFile)
-                        def gavMap = [:]
-                        env.TAG_VERSION =  pom['version'].text().trim()
-                        sh 'env'
-//                         env.TAG_VERSION =  Utils.tagVersion()
-//                         sh 'env'
+//                        def pomFile = readFile(file: 'pom.xml')
+//                        def pom = new XmlParser().parseText(pomFile)
+//                        def gavMap = [:]
+//                        env.TAG_VERSION =  pom['version'].text().trim()
+//                        sh 'env'
+                         env.TAG_VERSION =  Utils.get_TAG_VERSION()
+                         sh 'env'
                     }
                 }
             }
