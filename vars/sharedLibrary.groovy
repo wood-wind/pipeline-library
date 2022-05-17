@@ -33,7 +33,6 @@ def call(Map map) {
             //IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
             SETTING_FILE="${map.setting_file}"
 
-            IS_K8S_DEPLOY = "${map.is_k8s_deploy}"
             MODULES = "${map.modules}"
             COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
             COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse  HEAD')
@@ -172,12 +171,11 @@ def call(Map map) {
                 when {
                     environment name: 'DEPLOY_MODE', value: GlobalVars.release
                     expression {
-                        return (IS_K8S_DEPLOY == true)  // 是否进行云原生K8S集群部署
+                        return (IS_DEPLOY == true)  // 是否进行云原生K8S集群部署
                     }
                 }
                 steps {
                     script {
-                        // 云原生K8s部署大规模集群
                         k8sDeploy()
                     }
                 }
