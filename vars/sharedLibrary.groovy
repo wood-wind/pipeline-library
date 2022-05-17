@@ -52,7 +52,7 @@ def call(Map map) {
                 // 系统环境变量
                 NODE_OPTIONS = "--max_old_space_size=4096" // NODE内存调整 防止打包内存溢出
                 DOCKER_REPO_CREDENTIALS_ID = "${map.docker_repo_credentials_id}" // docker容器镜像仓库账号信任id
-                DOCKER_REPO_REGISTRY = "${map.docker_repo_registry}" // docker镜像仓库注册地址
+                REGISTRY = "${map.registry}" // docker镜像仓库注册地址
                 DOCKER_REPO_NAMESPACE = "${map.docker_repo_namespace}" // docker仓库命名空间名称
 
                 NODE_VERSION = "${map.nodejs}" // nodejs版本
