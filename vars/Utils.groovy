@@ -1,4 +1,4 @@
-
+import hudson.model.*;
 
 def get_TAG_VERSION() {
     def pomFile = readFile(file: 'pom.xml')
@@ -43,4 +43,4 @@ def get_TAG_VERSION() {
 //    }
 //}
 
-return this
+//return this
