@@ -545,7 +545,7 @@ def generateStage(key) {
                     sh 'docker pull ${REGISTRY}/halosee/nginx:stable-alpine'
                     sh 'docker pull ${REGISTRY}/halosee/node:12-alpine'
                 }
-                sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + value + '/'
+                sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
                 withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_REPO_CREDENTIALS_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                     sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION'
