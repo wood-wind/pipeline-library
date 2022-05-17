@@ -6,398 +6,185 @@ import shared.library.common.*
 
 
 def call(Map map) {
-    echo "Pipeline共享库脚本类型: web-java, jenkins分布式节点名: 前端${map.jenkins_node_front_end} , 后端${map.jenkins_node} "
-    // 应用共享方法定义
-//    changeLog = new ChangeLog()
-//    gitTagLog = new GitTagLog()
+    echo "开始构建，进入主方法..."
+    pipeline {
+        // 指定流水线每个阶段在哪里执行(物理机、虚拟机、Docker容器) agent any
+        agent {
+            node {
+                label "${map.pipeline_agent_lable}"
+                //label 'maven'
+            }
+        }
+        parameters {
+            choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1.release 2.dev分支')
+            choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
+            choice(name: 'IS_DEPLOY', choices: ['Y',''], description: '是否部署,Y或置空')
 
-    // 初始化参数
-//    getInitParams(map)
+        }
 
-//    remote = [:]
-//    try {
-//        remote.host = "${REMOTE_IP}" // 部署应用程序服务器IP 动态参数 可配置在独立的job中
-//    } catch (exception) {
-//        // println exception.getMessage()
-//        remote.host = "${map.remote_ip}" // 部署应用程序服务器IP  不传参数 使用默认值
-//    }
-//    remote.user = "${map.remote_user_name}"
-//    remote_worker_ips = readJSON text: "${map.remote_worker_ips}"  // 分布式部署工作服务器地址 同时支持N个服务器
-//    // 代理机或跳板机外网ip用于透传部署到目标机器
-//    proxy_jump_ip = "${map.proxy_jump_ip}"
+        environment {
+            DOCKER_REPO_CREDENTIALS_ID = "${map.docker_repo_credentials_id}" // docker容器镜像仓库账号信任id
+            REGISTRY = "${map.registry}" // docker镜像仓库注册地址
+            DOCKER_REPO_NAMESPACE = "${map.docker_repo_namespace}" // docker仓库命名空间名称
+            PIPELINE_AGENT_LABLE = "${map.pipeline_agent_lable}"
 
+            //DEPLOY_FOLDER = "${map.deploy_folder}" // 服务器上部署所在的文件夹名称
 
-        pipeline {
-            // 指定流水线每个阶段在哪里执行(物理机、虚拟机、Docker容器) agent any
-            agent {
-                node {
-                    //label "${PROJECT_TYPE.toInteger() == GlobalVars.frontEnd ? "${map.jenkins_node_front_end}" : "${map.jenkins_node}"}"
-                    label 'maven'
+            //IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
+            SETTING_FILE="${map.setting_file}"
+
+            IS_K8S_DEPLOY = "${map.is_k8s_deploy}"
+            MODULES = "${map.modules}"
+            COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
+            COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse  HEAD')
+            CREATE_TIME = sh(returnStdout: true, script: 'date "+%Y-%m-%d %H:%M:%S"')
+        }
+
+        options {
+            //失败重试次数
+            retry(0)
+            //超时时间 job会自动被终止
+            timeout(time: 30, unit: 'MINUTES')
+            //不允许同一个job同时执行流水线,可被用来防止同时访问共享资源等
+            disableConcurrentBuilds()
+            //如果某个stage为unstable状态，则忽略后面的任务，直接退出
+            skipStagesAfterUnstable()
+            //安静的时期 设置管道的静默时间段（以秒为单位），以覆盖全局默认值
+            quietPeriod(3)
+            //删除隐式checkout scm语句
+            skipDefaultCheckout()
+        }
+
+        stages {
+            stage('checkout scm') {
+                steps {
+                    script {
+                        echo 'checkout(scm)'
+                        checkout(scm)
+                    }
                 }
             }
-            //agent { label "${map.jenkins_node}" }
 
-            parameters {
-                choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1.release 2.dev分支')
-                choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
-                choice(name: 'IS_DEPLOY', choices: ['Y',''], description: '是否部署,Y或置空')
-   //             gitParameter(name: 'GIT_BRANCH', type: 'PT_BRANCH', defaultValue: "${BRANCH_NAME}", selectedValue: "DEFAULT",
-   //                     useRepository: "${REPO_URL}", sortMode: 'ASCENDING', branchFilter: 'origin/(.*)',
-   //                     description: "选择要构建的Git分支 默认: " + "${BRANCH_NAME} (可自定义配置具体任务的默认常用分支, 实现一键或全自动构建)")
-   //             gitParameter(name: 'GIT_TAG', type: 'PT_TAG', defaultValue: GlobalVars.noGit, selectedValue: GlobalVars.noGit,
-   //                     useRepository: "${REPO_URL}", sortMode: 'DESCENDING_SMART', tagFilter: '*',
-            }
-
-            environment {
-                // 系统环境变量
-                NODE_OPTIONS = "--max_old_space_size=4096" // NODE内存调整 防止打包内存溢出
-                DOCKER_REPO_CREDENTIALS_ID = "${map.docker_repo_credentials_id}" // docker容器镜像仓库账号信任id
-                REGISTRY = "${map.registry}" // docker镜像仓库注册地址
-                DOCKER_REPO_NAMESPACE = "${map.docker_repo_namespace}" // docker仓库命名空间名称
-
-                NODE_VERSION = "${map.nodejs}" // nodejs版本
-                JDK_VERSION = "${map.jdk}" // JDK版本
-                CI_GIT_CREDENTIALS_ID = "${map.ci_git_credentials_id}" // CI仓库信任ID
-                GIT_CREDENTIALS_ID = "${map.git_credentials_id}" // Git信任ID
-                DEPLOY_FOLDER = "${map.deploy_folder}" // 服务器上部署所在的文件夹名称
-                NPM_PACKAGE_FOLDER = "${map.npm_package_folder}" // Web项目NPM打包代码所在的文件夹名称
-                WEB_STRIP_COMPONENTS = "${map.web_strip_components}" // Web项目解压到指定目录层级
-                MAVEN_ONE_LEVEL = "${map.maven_one_level}"// 如果Maven模块化存在二级模块目录 设置一级模块目录名称
-                DOCKER_JAVA_OPTS = "${map.docker_java_opts}" // JVM内存设置
-                DOCKER_MEMORY = "${map.docker_memory}" // docker内存限制
-                DOCKER_LOG_OPTS = "${map.docker_log_opts}" // docker日志限制
-                IS_PUSH_DOCKER_REPO = "${map.is_push_docker_repo}" // 是否上传镜像到docker容器仓库
-
-                DOCKER_MULTISTAGE_BUILD_IMAGES = "${map.docker_multistage_build_images}" // Dockerfile多阶段构建 镜像名称
-                PROJECT_TAG = "${map.project_tag}" // 项目标签或项目简称
-                IS_PROD = "${map.is_prod}" // 是否是生产环境
-                IS_NEED_SASS = "${map.is_need_sass}" // 是否需要css预处理器sass
-                IS_AUTO_TRIGGER = false // 是否是自动触发构建
-                IS_CODE_QUALITY_ANALYSIS = false // 是否进行代码质量分析的总开关
-                SETTING_FILE="${map.SETTING_FILE}"
-
-                IS_K8S_DEPLOY = "${map.is_k8s_deploy}"
-                MODULES = "${map.modules}"
-                COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
-                COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse  HEAD')
-                CREATE_TIME = sh(returnStdout: true, script: 'date "+%Y-%m-%d %H:%M:%S"')
-            }
-
-            options {
-                //失败重试次数
-                retry(0)
-                //超时时间 job会自动被终止
-                timeout(time: 30, unit: 'MINUTES')
-                //不允许同一个job同时执行流水线,可被用来防止同时访问共享资源等
-                disableConcurrentBuilds()
-                //如果某个stage为unstable状态，则忽略后面的任务，直接退出
-                skipStagesAfterUnstable()
-                //安静的时期 设置管道的静默时间段（以秒为单位），以覆盖全局默认值
-                quietPeriod(3)
-                //删除隐式checkout scm语句
-                skipDefaultCheckout()
-            }
-
-            stages {
-                stage('checkout scm') {
-                    steps {
-                        script {
-                            echo 'checkout(scm)'
-                            checkout(scm)
-                        }
+            stage("fetch pom version") {
+                steps {
+                    script {
+                        def pomFile = readFile(file: 'pom.xml')
+                        def pom = new XmlParser().parseText(pomFile)
+                        def gavMap = [:]
+                        env.TAG_VERSION =  pom['version'].text().trim()
+                        sh 'env'
+//                         env.TAG_VERSION =  Utils.tagVersion()
+//                         sh 'env'
                     }
                 }
+            }
 
-                stage("fetch pom version") {
-                    steps {
-                        script {
-                            def pomFile = readFile(file: 'pom.xml')
-                            def pom = new XmlParser().parseText(pomFile)
-                            def gavMap = [:]
-                            env.TAG_VERSION =  pom['version'].text().trim()
-                            sh 'env'
-   //                         env.TAG_VERSION =  Utils.tagVersion()
-   //                         sh 'env'
-                        }
-                    }
-                }
-
-                /*   stage('扫码代码') {
-                       //failFast true  // 其他阶段失败 中止parallel块同级正在进行的并行阶段
-        //               parallel { */// 阶段并发执行
-        //        stage('代码质量') {
-        //            when {
-        //                beforeAgent true
-        //                // 生产环境不进行代码分析 缩减构建时间
-        //                not {
-        //                    anyOf {
-        //                        branch 'master'
-        //                        branch 'prod'
-        //                    }
-        //                }
-        //                environment name: 'DEPLOY_MODE', value: GlobalVars.release
-        //                environment name: 'IS_SONAR', value: 'Y'
-        //                expression {
-        //                    // 是否进行代码质量分析  && fileExists("sonar-project.properties") == true 代码根目录配置sonar-project.properties文件才进行代码质量分析
-        //                    // return ("${IS_CODE_QUALITY_ANALYSIS}" == 'true' )
-        //                    return false
-        //                }
-        //            }
-        //            agent {
-        //                label "linux"
-        //                /*   docker {
-        //                       // sonarqube环境  构建完成自动删除容器
-        //                       image "sonarqube:community"
-        //                       reuseNode true // 使用根节点
-        //                   }*/
-        //            }
-        //            steps {
-        //                // 只显示当前阶段stage失败  而整个流水线构建显示成功
-        //                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-        //                    script {
-        //                        codeQualityAnalysis()
-        //                    }
-        //                }
-        //            }
-        //        }
-
-
-
-                stage('build') {
-                    when {
-                        beforeAgent true
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                    //    expression { return (IS_DOCKER_BUILD == true }
-                    }
-                    steps {
-                        container('maven') {
-                            script {
-                                sh 'echo "build"'
-                                mavenBuildProject(MODULES)
-                            }
-                        }
-                    }
-                }
-
-                stage('parallel build modules images') {
-                    when {
-                        beforeAgent true
-                        //            expression { return ("${IS_PUSH_DOCKER_REPO}" == 'true') }
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                    }
-                    //agent { label "slave-jdk11-prod" }
-                    steps {
-                        script {
-                                echo 'build modules images'
-                                moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
-
-                                parallel parallelStagesMap
-                            }
-                        }
-                    }
-
-    //            stage('健康检测') {
-    //                when {
-    //                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
-    //                    expression {
-    //                        return (params.IS_HEALTH_CHECK == true && IS_BLUE_GREEN_DEPLOY == false)
+            /*   stage('扫码代码') {
+                   //failFast true  // 其他阶段失败 中止parallel块同级正在进行的并行阶段
+    //               parallel { */// 阶段并发执行
+    //        stage('代码质量') {
+    //            when {
+    //                beforeAgent true
+    //                // 生产环境不进行代码分析 缩减构建时间
+    //                not {
+    //                    anyOf {
+    //                        branch 'master'
+    //                        branch 'prod'
     //                    }
     //                }
-    //                steps {
+    //                environment name: 'DEPLOY_MODE', value: GlobalVars.release
+    //                environment name: 'IS_SONAR', value: 'Y'
+    //                expression {
+    //                    // 是否进行代码质量分析  && fileExists("sonar-project.properties") == true 代码根目录配置sonar-project.properties文件才进行代码质量分析
+    //                    // return ("${IS_CODE_QUALITY_ANALYSIS}" == 'true' )
+    //                    return false
+    //                }
+    //            }
+    //            agent {
+    //                label "linux"
+    //                /*   docker {
+    //                       // sonarqube环境  构建完成自动删除容器
+    //                       image "sonarqube:community"
+    //                       reuseNode true // 使用根节点
+    //                   }*/
+    //            }
+    //            steps {
+    //                // 只显示当前阶段stage失败  而整个流水线构建显示成功
+    //                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
     //                    script {
-    //                        //healthCheck()
-    //                        echo '健康检查'
+    //                        codeQualityAnalysis()
     //                    }
     //                }
     //            }
+    //        }
 
-                stage('Kubernetes云原生') {
-                    when {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        expression {
-                            return (IS_K8S_DEPLOY == true)  // 是否进行云原生K8S集群部署
-                        }
-                    }
-                    steps {
+
+
+            stage('build') {
+                when {
+                    beforeAgent true
+                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
+                //    expression { return (IS_DOCKER_BUILD == true }
+                }
+                steps {
+                    container('maven') {
                         script {
-                            // 云原生K8s部署大规模集群
-                            k8sDeploy()
+                            sh 'echo "build"'
+                            mavenBuildProject(MODULES)
                         }
                     }
                 }
             }
-    }
-}
 
-def parallelStagesMap = moduleList.collectEntries { key ->
-    ["build && push  ${key}": generateStage(key)]
-}
+            stage('parallel build modules images') {
+                when {
+                    beforeAgent true
+    //                environment name: 'DEPLOY_MODE', value: GlobalVars.release
+                }
+                steps {
+                    script {
+                            echo 'build modules images'
+                            moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
+                            def parallelStagesMap = moduleList.collectEntries { key ->
+                                ["build && push  ${key}": generateStage(key)]
+                            }
+                            parallel parallelStagesMap
+                        }
+                    }
+                }
 
+//            stage('健康检测') {
+//                when {
+//                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
+//                    expression {
+//                        return (params.IS_HEALTH_CHECK == true && IS_BLUE_GREEN_DEPLOY == false)
+//                    }
+//                }
+//                steps {
+//                    script {
+//                        //healthCheck()
+//                        echo '健康检查'
+//                    }
+//                }
+//            }
 
-/**
- *  获取初始化参数方法
- */
-def getInitParams(map) {
-    def jsonParams = readJSON text: "${JSON_PARAMS}"
-    // println "${jsonParams}"
-//    REPO_URL = jsonParams.REPO_URL ? jsonParams.REPO_URL.trim() : "" // Git源码地址
-    BRANCH_NAME = jsonParams.BRANCH_NAME ? jsonParams.BRANCH_NAME.trim() : GlobalVars.defaultBranch  // Git默认分支
-    PROJECT_TYPE = jsonParams.PROJECT_TYPE ? jsonParams.PROJECT_TYPE.trim() : ""  // 项目类型 1 前端项目 2 后端项目
-    // 计算机语言类型 1. Java  2. Go  3. Python  5. C++
-    COMPUTER_LANGUAGE = jsonParams.COMPUTER_LANGUAGE ? jsonParams.COMPUTER_LANGUAGE.trim() : "1"
-    // 项目名 获取部署资源位置和指定构建模块名等
-    PROJECT_NAME = jsonParams.PROJECT_NAME ? jsonParams.PROJECT_NAME.trim() : ""
-    SHELL_PARAMS = jsonParams.SHELL_PARAMS ? jsonParams.SHELL_PARAMS.trim() : "" // shell传入前端或后端参数
-
-    // npm包管理工具类型 如:  npm、yarn、pnpm
-    NPM_PACKAGE_TYPE = jsonParams.NPM_PACKAGE_TYPE ? jsonParams.NPM_PACKAGE_TYPE.trim() : "npm"
-    NPM_RUN_PARAMS = jsonParams.NPM_RUN_PARAMS ? jsonParams.NPM_RUN_PARAMS.trim() : "" // npm run [test]的前端项目参数
-
-    // 是否使用Docker容器环境方式构建打包 false使用宿主机环境
-    IS_DOCKER_BUILD =  true
-    IS_BLUE_GREEN_DEPLOY = jsonParams.IS_BLUE_GREEN_DEPLOY ? jsonParams.IS_BLUE_GREEN_DEPLOY : false // 是否蓝绿部署
-    IS_ROLL_DEPLOY = jsonParams.IS_ROLL_DEPLOY ? jsonParams.IS_ROLL_DEPLOY : false // 是否滚动部署
-    IS_GRAYSCALE_DEPLOY = jsonParams.IS_GRAYSCALE_DEPLOY ? jsonParams.IS_GRAYSCALE_DEPLOY : false // 是否灰度发布
-    IS_K8S_DEPLOY = jsonParams.IS_K8S_DEPLOY ? jsonParams.IS_K8S_DEPLOY : false // 是否K8s集群部署
-    IS_SERVERLESS_DEPLOY = jsonParams.IS_SERVERLESS_DEPLOY ? jsonParams.IS_SERVERLESS_DEPLOY : false // 是否Serverless发布
-    IS_STATIC_RESOURCE = jsonParams.IS_STATIC_RESOURCE ? jsonParams.IS_STATIC_RESOURCE : false // 是否静态web资源
-    IS_UPLOAD_OSS = jsonParams.IS_UPLOAD_OSS ? jsonParams.IS_UPLOAD_OSS : false // 是否构建产物上传到OSS
-    IS_MONO_REPO = jsonParams.IS_MONO_REPO ? jsonParams.IS_MONO_REPO : false // 是否monorepo单体仓库
-    // 是否Maven单模块代码
-    IS_MAVEN_SINGLE_MODULE = jsonParams.IS_MAVEN_SINGLE_MODULE ? jsonParams.IS_MAVEN_SINGLE_MODULE : false
-
-    // 设置monorepo单体仓库主包文件夹名
-    MONO_REPO_MAIN_PACKAGE = jsonParams.MONO_REPO_MAIN_PACKAGE ? jsonParams.MONO_REPO_MAIN_PACKAGE.trim() : "projects"
-    // Maven自定义指定settings.xml文件  如设置私有库或镜像源情况
-    MAVEN_SETTING_XML = jsonParams.MAVEN_SETTING_XML ? jsonParams.MAVEN_SETTING_XML.trim() : "${map.maven_setting_xml}".trim()
-    AUTO_TEST_PARAM = jsonParams.AUTO_TEST_PARAM ? jsonParams.AUTO_TEST_PARAM.trim() : ""  // 自动化集成测试参数
-    // Java框架类型 1. Spring Boot  2. Spring MVC
-    JAVA_FRAMEWORK_TYPE = jsonParams.JAVA_FRAMEWORK_TYPE ? jsonParams.JAVA_FRAMEWORK_TYPE.trim() : "1"
-
-    // 默认统一设置项目级别的分支 方便整体控制改变分支 将覆盖单独job内的设置
-    if ("${map.default_git_branch}".trim() != "") {
-        BRANCH_NAME = "${map.default_git_branch}"
-    }
-    // 启动时间长的服务是否进行部署前通知  具体job级别设置优先
-    if (jsonParams.IS_BEFORE_DEPLOY_NOTICE ? jsonParams.IS_BEFORE_DEPLOY_NOTICE.toBoolean() : false) {
-        IS_BEFORE_DEPLOY_NOTICE = true
-    }
-
-    // 统一前端monorepo仓库到一个job中, 减少构建依赖缓存大小和jenkins job维护成本
-    MONOREPO_PROJECT_NAMES = ""
-    if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd && "${IS_MONO_REPO}" == 'true') {
-        MONOREPO_PROJECT_NAMES = PROJECT_NAME.trim().replace(",", "\n")
-        def projectNameArray = "${PROJECT_NAME}".split(",") as ArrayList
-        def projectNameIndex = projectNameArray.indexOf(params.MONOREPO_PROJECT_NAME)
-        PROJECT_NAME = projectNameArray[projectNameIndex]
-        SHELL_PARAMS = ("${SHELL_PARAMS}".split(",") as ArrayList)[projectNameIndex]
-        NPM_RUN_PARAMS = ("${NPM_RUN_PARAMS}".split(",") as ArrayList)[projectNameIndex]
-        if ("${MONO_REPO_MAIN_PACKAGE}".contains(",")) {
-            MONO_REPO_MAIN_PACKAGE = ("${MONO_REPO_MAIN_PACKAGE}".split(",") as ArrayList)[projectNameIndex]
+            stage('Kubernetes云原生') {
+                when {
+                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
+                    expression {
+                        return (IS_K8S_DEPLOY == true)  // 是否进行云原生K8S集群部署
+                    }
+                }
+                steps {
+                    script {
+                        // 云原生K8s部署大规模集群
+                        k8sDeploy()
+                    }
+                }
+            }
         }
-        println("大统一前端monorepo仓库项目参数: ${PROJECT_NAME}:${NPM_RUN_PARAMS}:${SHELL_PARAMS}")
-    } else {
-        MONOREPO_PROJECT_NAMES = GlobalVars.defaultValue
-    }
-
-    SHELL_PARAMS_ARRAY = SHELL_PARAMS.split("\\s+")  // 正则表达式\s表示匹配任何空白字符，+表示匹配一次或多次
-    SHELL_PROJECT_NAME = SHELL_PARAMS_ARRAY[0] // 项目名称
-    SHELL_PROJECT_TYPE = SHELL_PARAMS_ARRAY[1] // 项目类型
-    SHELL_HOST_PORT = SHELL_PARAMS_ARRAY[2] // 宿主机对外访问接口
-    SHELL_EXPOSE_PORT = SHELL_PARAMS_ARRAY[3] // 容器内暴露端口
-    SHELL_ENV_MODE = SHELL_PARAMS_ARRAY[4] // 环境模式 如 dev test prod等
-
-    // 获取通讯录
-    contactPeoples = ""
-    try {
-        def data = libraryResource('contacts.yaml')
-        Map contacts = readYaml text: data
-        contactPeoples = "${contacts.people}"
-    } catch (e) {
-        println("获取通讯录失败")
-        println(e.getMessage())
-    }
-
-    // tag版本变量定义
-    tagVersion = ""
-    // 是否健康检测失败状态
-    isHealthCheckFail = false
-    // 扫描二维码地址
-    qrCodeOssUrl = ""
-    // Java构建包OSS地址Url
-    javaOssUrl = ""
-    // Web构建包大小
-    webPackageSize = ""
-    // Java打包类型 jar、war
-    javaPackageType = ""
-    // Java构建包大小
-    javaPackageSize = ""
-    // Maven打包后产物的位置
-    mavenPackageLocation = ""
-}
-
-/**
- * 初始化信息
- */
-def initInfo() {
-    // 判断平台信息
-    if (!isUnix()) {
-        error("当前脚本针对Unix(如Linux或MacOS)系统 脚本执行失败 ❌")
-    }
-    //echo sh(returnStdout: true, script: 'env')
-    //sh 'printenv'
-    //println "${env.PATH}"
-    //println currentBuild
-    try {
-        echo "$git_event_name"
-        IS_AUTO_TRIGGER = true
-    } catch (e) {
-    }
-    // 初始化docker环境变量
-    Docker.initEnv(this)
-
-    // 不同语言使用不同的从服务部署脚本
-    dockerReleaseWorkerShellName = ""
-    if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Java) {
-        dockerReleaseWorkerShellName = "docker-release-worker.sh"
-    } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Go) {
-        dockerReleaseWorkerShellName = "go/docker-release-worker-go.sh"
-    } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Python) {
-        dockerReleaseWorkerShellName = "python/docker-release-worker-python.sh"
-    } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd && "${COMPUTER_LANGUAGE}".toInteger() == GlobalVars.Cpp) {
-        dockerReleaseWorkerShellName = "cpp/docker-release-worker-cpp.sh"
-    }
-
-    // 是否跳板机穿透方式部署
-    isProxyJumpType = false
-    // 跳板机ssh ProxyJump访问新增的文本
-    proxyJumpSSHText = ""
-    proxyJumpSCPText = ""
-    if ("${proxy_jump_ip}".trim() != "") {
-        isProxyJumpType = true
-        // ssh -J root@外网跳板机IP:22 root@内网目标机器IP -p 22
-        proxyJumpSSHText = " -J root@${proxy_jump_ip} "
-        proxyJumpSCPText=" -o 'ProxyJump root@${proxy_jump_ip}' "
-    }
-
-}
-
-/**
- * 获取CI代码库
- */
-def pullCIRepo() {
-    // 同步部署脚本和配置文件等
-    sh ' mkdir -p ci && chmod -R 777 ci'
-    dir("${env.WORKSPACE}/ci") {
-        def reg = ~/^\*\// // 正则匹配去掉*/字符
-        // 根据jenkins配置的scm分支 获取相应分支下脚本和配置 支持多分支构建
-        scmBranchName = scm.branches[0].name - reg
-        println "Jenkinsfile文件和CI代码库分支: ${scmBranchName}"
-        // 拉取Git上的部署文件 无需人工上传
-        git url: "${GlobalVars.CI_REPO_URL}", branch: "${scmBranchName}", changelog: false, credentialsId: "${CI_GIT_CREDENTIALS_ID}"
     }
 }
-
 
 /**
  * 代码质量分析
