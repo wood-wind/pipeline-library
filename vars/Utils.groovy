@@ -2,6 +2,7 @@ import hudson.model.*;
 
 def get_TAG_VERSION() {
     def pomFile = readFile(file: 'pom.xml')
+    echo '${pomFile}'
     def pom = new XmlParser().parseText(pomFile)
     def gavMap = [:]
     TAG_VERSION =  pom['version'].text().trim()
