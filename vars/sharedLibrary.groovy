@@ -106,7 +106,7 @@ def call(Map map) {
                     steps {
                         script {
                             echo 'checkout(scm)'
-                        //    checkout(scm)
+                            checkout(scm)
                         }
                     }
                 }
@@ -176,7 +176,7 @@ def call(Map map) {
                         container('maven') {
                             script {
                                 sh 'echo "build"'
-                            //    mavenBuildProject(MODULES)
+                                mavenBuildProject(MODULES)
                             }
                         }
                     }
@@ -191,16 +191,16 @@ def call(Map map) {
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
-                            def modules = [
-                                    "gateway"     : "gateway",
-                                    "portal"      : "portal",
-                                    "uc"          : "uc",
-                                    "form"        : "form",
-                                    "bpm-model"   : "bpm-model",
-                                    "bpm-runtime" : "bpm-runtime",
-                                    "blade-visual": "blade-visual",
-                                    "api-develop" : "api-develop"
-                            ]
+//                            def modules = [
+//                                    "gateway"     : "gateway",
+//                                    "portal"      : "portal",
+//                                    "uc"          : "uc",
+//                                    "form"        : "form",
+//                                    "bpm-model"   : "bpm-model",
+//                                    "bpm-runtime" : "bpm-runtime",
+//                                    "blade-visual": "blade-visual",
+//                                    "api-develop" : "api-develop"
+//                            ]
 //                            modules.collectEntries { key -> [("loop module ${key}"): generateStage(key)]
                                 echo 'build modules images'
                             def parallelStagesMap = modules.collectEntries { key, value ->
