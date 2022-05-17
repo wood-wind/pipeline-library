@@ -188,45 +188,13 @@ def call(Map map) {
                     //agent { label "slave-jdk11-prod" }
                     steps {
                         script {
-//                            def modules = [
-//                                    "gateway"     : "gateway",
-//                                    "portal"      : "portal",
-//                                    "uc"          : "uc",
-//                                    "form"        : "form",
-//                                    "bpm-model"   : "bpm-model",
-//                                    "bpm-runtime" : "bpm-runtime",
-//                                    "blade-visual": "blade-visual",
-//                                    "api-develop" : "api-develop"
-//                            ]
-//                            modules.collectEntries { key -> [("loop module ${key}"): generateStage(key)]
                                 echo 'build modules images'
                                 moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
-                                def parallelStagesMap = moduleList.collectEntries { key ->
-                                    ["build && push  ${key}": generateStage(key)]
-                                }
+
                                 parallel parallelStagesMap
                             }
                         }
                     }
-
-
-
-
-  //              stage('人工审批') {
-  //                  when {
-  //                      environment name: 'DEPLOY_MODE', value: GlobalVars.release
-  //                      expression {
-  //                          return false
-  //                      }
-  //                  }
-  //                  steps {
-  //                      script {
-  //                          manualApproval()
-  //                      }
-  //                  }
-  //              }
-
-
 
     //            stage('健康检测') {
     //                when {
@@ -243,37 +211,6 @@ def call(Map map) {
     //                }
     //            }
 
-   //             stage('集成测试') {
-   //                 when {
-   //                     beforeAgent true
-   //                     // 生产环境不进行集成测试 缩减构建时间
-   //                     not {
-   //                         anyOf {
-   //                             branch 'aaa'
-   //                         }
-   //                     }
-   //                     environment name: 'DEPLOY_MODE', value: GlobalVars.release
-   //                     expression {
-   //                         // 是否进行集成测试  是否存在postman_collection.json文件才进行API集成测试  fileExists("_test/postman/postman_collection.json") == true
-   //                         return ("${IS_INTEGRATION_TESTING}" == 'true' && "${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd
-   //                                 && "${AUTO_TEST_PARAM}" != "" && IS_BLUE_GREEN_DEPLOY == false)
-   //                     }
-   //                 }
-/* //                   agent {
-   //                     docker {
-   //                         // Node环境  构建完成自动删除容器
-   //                         image "node:${NODE_VERSION}"
-   //                         reuseNode true // 使用根节点
-   //                     }
-   //                 }*/
-   //                 steps {
-   //                     script {
-   //                         //integrationTesting()
-   //                         echo '集成测试'
-   //                     }
-   //                 }
-   //             }
-
                 stage('Kubernetes云原生') {
                     when {
                         environment name: 'DEPLOY_MODE', value: GlobalVars.release
@@ -288,28 +225,13 @@ def call(Map map) {
                         }
                     }
                 }
-
-
-    //            stage('制品仓库') {
-    //                when {
-    //                    // branch 'master'
-    //                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
-    //                    expression {
-    //                        return false  // 是否进行制品仓库
-    //                    }
-    //                }
-    //                steps {
-    //                    script {
-    //                        productsWarehouse(map)
-    //                    }
-    //                }
-    //            }
-
             }
     }
 }
 
-
+def parallelStagesMap = moduleList.collectEntries { key ->
+    ["build && push  ${key}": generateStage(key)]
+}
 
 
 /**
@@ -461,36 +383,6 @@ def initInfo() {
 }
 
 /**
- * 组装初始化shell参数
- */
-def getShellParams(map) {
-    if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-        SHELL_WEB_PARAMS_GETOPTS = " -a ${SHELL_PROJECT_NAME} -b ${SHELL_PROJECT_TYPE} -c ${SHELL_HOST_PORT} " +
-                "-d ${SHELL_EXPOSE_PORT} -e ${SHELL_ENV_MODE}  -f ${DEPLOY_FOLDER} -g ${NPM_PACKAGE_FOLDER} -h ${WEB_STRIP_COMPONENTS} " +
-                "-i ${IS_PUSH_DOCKER_REPO}  -k ${DOCKER_REPO_REGISTRY}/${DOCKER_REPO_NAMESPACE}  "
-    } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd) {
-        // 使用getopts的方式进行shell参数传递
-        SHELL_PARAMS_GETOPTS = " -a ${SHELL_PROJECT_NAME} -b ${SHELL_PROJECT_TYPE} -c ${SHELL_HOST_PORT} " +
-                "-d ${SHELL_EXPOSE_PORT} -e ${SHELL_ENV_MODE}  -f ${IS_PROD} -g ${DOCKER_JAVA_OPTS} -h ${DOCKER_MEMORY} " +
-                "-i ${DOCKER_LOG_OPTS}  -k ${DEPLOY_FOLDER} -l ${JDK_VERSION} -m ${IS_PUSH_DOCKER_REPO} " +
-                "-n ${DOCKER_REPO_REGISTRY}/${DOCKER_REPO_NAMESPACE} -q ${JAVA_FRAMEWORK_TYPE} "
-        if ("${map.docker_volume_mount}") {
-            SHELL_PARAMS_GETOPTS = "${SHELL_PARAMS_GETOPTS} -o ${map.docker_volume_mount} "
-        }
-        if ("${SHELL_PARAMS_ARRAY.length}" == '6') {
-            SHELL_REMOTE_DEBUG_PORT = SHELL_PARAMS_ARRAY[5] // 远程调试端口
-            SHELL_PARAMS_GETOPTS = "${SHELL_PARAMS_GETOPTS} -y ${SHELL_REMOTE_DEBUG_PORT}"
-        }
-
-        if ("${SHELL_PARAMS_ARRAY.length}" == '7') {
-            SHELL_EXTEND_PORT = SHELL_PARAMS_ARRAY[6]  // 扩展端口
-            SHELL_PARAMS_GETOPTS = "${SHELL_PARAMS_GETOPTS} -z ${SHELL_EXTEND_PORT}"
-        }
-        // println "${SHELL_PARAMS_GETOPTS}"
-    }
-}
-
-/**
  * 获取CI代码库
  */
 def pullCIRepo() {
@@ -557,46 +449,6 @@ def generateStage(key) {
     }
 }
 
-/**
- * 人工卡点审批
- * 每一个人都有点击执行流水线权限  但是不一定有发布上线的权限 为了保证项目稳定安全等需要人工审批
- */
-def manualApproval() {
-    // 针对生产环境部署前做人工发布审批
-    if ("${IS_PROD}" == 'true') {
-        // 选择具有审核权限的人员 可以配置一个或多个
-        def approvalPersons = ["潘维吉"] // 多审批人数组 参数化配置 也可指定审批人
-        def approvalPersonMobiles = ["18863302302"] // 审核人的手机数组 用于钉钉通知等
-
-        // 两种审批 1. 或签(一名审批人员同意或拒绝即可) 2. 会签(须所有审批人同意)
-        if ("${approvalPersons}".contains("${BUILD_USER}")) {
-            // 如果是有审核权限人员发布的跳过本次审核
-        } else {
-            // 同时钉钉通知到审核人 点击链接自动进入要审核流水线  如果Jenkins提供Open API审核可直接在钉钉内完成点击审批
-            DingTalk.notice(this, "${DING_TALK_CREDENTIALS_ID}", "发布流水线申请人工审批 ✍🏻 ",
-                    "#### ${BUILD_USER}申请发布${PROJECT_NAME}服务, [请您审批](${env.BUILD_URL}) 👈🏻  !" +
-                            " \n ###### Jenkins  [运行日志](${env.BUILD_URL}console)  " +
-                            " \n ###### 发布人: ${BUILD_USER}" +
-                            " \n ###### 通知时间: ${Utils.formatDate()} (${Utils.getWeek(this)})",
-                    "${approvalPersonMobiles}".split(","))
-            input {
-                message "请【${approvalPersons.split(",")}】相关人员审批本次部署, 是否同意继续发布 ?"
-                ok "同意"
-            }
-            def currentUser = env.BUILD_USER
-            println(currentUser)
-            if (!"${approvalPersons}".contains(currentUser)) {
-                error("人工审批失败, 您没有审批的权限, 请重新运行流水线发起审批 ❌")
-            } else {
-                // 审核人同意后通知发布人 消息自动及时高效传递
-                DingTalk.notice(this, "${DING_TALK_CREDENTIALS_ID}", "您发布流水线已被${currentUser}审批同意 ✅",
-                        "#### 前往流水线 [查看](${env.BUILD_URL})  !" +
-                                " \n ###### 审批时间: ${Utils.formatDate()} (${Utils.getWeek(this)})",
-                        "${BUILD_USER_MOBILE}")
-            }
-        }
-    }
-}
 
 /**
  * 健康检测
@@ -711,35 +563,3 @@ def productsWarehouse(map) {
     // AliYunOss.upload(this)
 
 }
-
-/**
- * 总会执行统一处理方法
- */
-def alwaysPost() {
-    // sh 'pwd'
-    // cleanWs()  // 清空工作空间
-    // Jenkins全局安全配置->标记格式器内设置Safe HTML支持html文本
-    try {
-        def releaseEnvironment = "${NPM_RUN_PARAMS != "" ? NPM_RUN_PARAMS : SHELL_ENV_MODE}"
-        if ("${PROJECT_TYPE}".toInteger() == GlobalVars.frontEnd) {
-            currentBuild.description = "${IS_GEN_QR_CODE == 'true' ? "<img src=${qrCodeOssUrl} width=250 height=250 > <br/> " : ""}" +
-                    "<a href='http://${remote.host}:${SHELL_HOST_PORT}'> 👉URL访问地址</a> " +
-                    "<br/> 项目: ${PROJECT_NAME}" +
-                    "${IS_PROD == 'true' ? "<br/> 版本: ${tagVersion}" : ""} " +
-                    "<br/> 大小: ${webPackageSize} <br/> 分支: ${BRANCH_NAME} <br/> 环境: ${releaseEnvironment} <br/> 发布人: ${BUILD_USER}"
-        } else if ("${PROJECT_TYPE}".toInteger() == GlobalVars.backEnd) {
-            currentBuild.description = "<a href='http://${remote.host}:${SHELL_HOST_PORT}'> 👉API访问地址</a> " +
-                    "${javaOssUrl.trim() != '' ? "<br/><a href='${javaOssUrl}'> 👉直接下载构建${javaPackageType}包</a>" : ""}" +
-                    "<br/> 项目: ${PROJECT_NAME}" +
-                    "${IS_PROD == 'true' ? "<br/> 版本: ${tagVersion}" : ""} " +
-                    "<br/> 大小: ${javaPackageSize} <br/> 分支: ${BRANCH_NAME} <br/> 环境: ${releaseEnvironment} <br/> 发布人: ${BUILD_USER}"
-        }
-    } catch (error) {
-        println error.getMessage()
-    }
-}
-
-
-
-
-
