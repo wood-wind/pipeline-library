@@ -5,6 +5,7 @@ def get_TAG_VERSION() {
     def pom = new XmlParser().parseText(pomFile)
     def gavMap = [:]
     TAG_VERSION =  pom['version'].text().trim()
+    return TAG_VERSION
 }
 
 //def isdir(String d) {
