@@ -203,9 +203,10 @@ def call(Map map) {
 //                            ]
 //                            modules.collectEntries { key -> [("loop module ${key}"): generateStage(key)]
                                 echo 'build modules images'
-                            def parallelStagesMap = modules.collectEntries { key, value ->
-                                ["build && push  ${key}": generateStage(key, value)]
-                            }
+                                moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
+                                def parallelStagesMap = moduleList.collectEntries { key ->
+                                    ["build && push  ${key}": generateStage(key)]
+                                }
                                 parallel parallelStagesMap
                             }
                         }
