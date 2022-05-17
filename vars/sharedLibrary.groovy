@@ -139,7 +139,7 @@ def call(Map map) {
             stage('parallel build modules images') {
                 when {
                     beforeAgent true
-    //                environment name: 'DEPLOY_MODE', value: GlobalVars.release
+                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
                 }
                 steps {
                     script {
