@@ -72,7 +72,7 @@ def call(Map map) {
 //                        def gavMap = [:]
 //                        env.TAG_VERSION =  pom['version'].text().trim()
 //                        sh 'env'
-                         env.TAG_VERSION =  Utils.get_TAG_VERSION()
+                         env.TAG_VERSION = Utils.tagVersion()
                          sh 'env'
                     }
                 }
