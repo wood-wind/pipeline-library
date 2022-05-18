@@ -29,7 +29,7 @@ class Utils implements Serializable {
         return TAG_VERSION
     }
 
-    static def getBuildProperties(){
+    def getBuildProperties(){
         return script.readFile('pom.xml')
     }
 }
