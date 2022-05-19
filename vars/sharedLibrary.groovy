@@ -16,7 +16,7 @@ def call(Map map) {
         }
         parameters {
             choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1.release 2.dev分支')
-            choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
+//            choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
             choice(name: 'IS_DEPLOY', choices: ['Y',''], description: '是否部署,Y或置空')
         }
 
