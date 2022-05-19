@@ -73,7 +73,7 @@ def call(Map map) {
                         def gavMap = [:]
                         env.TAG_VERSION =  pom['version'].text().trim()
 
-                        if (GlobalVars.release = "dev") {
+                        if (GlobalVars.release == "dev") {
                             env.IS_SIDECAR = "Y"
                         } else {
                             env.IS_SIDECAR = ""
