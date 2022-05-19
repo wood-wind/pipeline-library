@@ -72,6 +72,12 @@ def call(Map map) {
                         def pom = new XmlParser().parseText(pomFile)
                         def gavMap = [:]
                         env.TAG_VERSION =  pom['version'].text().trim()
+
+                        if (GlobalVars.release = "dev") {
+                            env.IS_SIDECAR = "Y"
+                        } else {
+                            env.IS_SIDECAR = ""
+                        }
                         sh 'env'
                     }
                 }
