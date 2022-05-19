@@ -4,7 +4,6 @@ import shared.library.GlobalVars
 import shared.library.Utils
 import shared.library.common.*
 
-
 def call(Map map) {
     echo "开始构建，进入主方法..."
     pipeline {
@@ -19,18 +18,21 @@ def call(Map map) {
             choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1.release 2.dev分支')
             choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
             choice(name: 'IS_DEPLOY', choices: ['Y',''], description: '是否部署,Y或置空')
-
         }
 
         environment {
-            DOCKER_REPO_CREDENTIALS_ID = "${map.docker_repo_credentials_id}" // docker容器镜像仓库账号信任id
-            REGISTRY = "${map.registry}" // docker镜像仓库注册地址
-            DOCKER_REPO_NAMESPACE = "${map.docker_repo_namespace}" // docker仓库命名空间名称
-            PIPELINE_AGENT_LABLE = "${map.pipeline_agent_lable}"
-            JDK_VERSION="${map.jdk_version}"
-            //DEPLOY_FOLDER = "${map.deploy_folder}" // 服务器上部署所在的文件夹名称
-            SETTING_FILE="${map.setting_file}"
-            KUBECONFIG_CREDENTIAL_ID="${map.kubeconfig_credential_id}"
+            DOCKER_REPO_CREDENTIALS_ID = "${map.docker_repo_credentials_id}"    // docker容器镜像仓库账号信任id
+            REGISTRY = "${map.registry}"                                        // docker镜像仓库注册地址
+            DOCKER_REPO_NAMESPACE = "${map.docker_repo_namespace}"              // docker仓库命名空间名称
+            DEPLOY_NAMESPACE = "${map.deploy_namespace}"                        // 部署的项目名称
+            PIPELINE_AGENT_LABLE = "${map.pipeline_agent_lable}"                // 工作容器的标签,跑流水线的容器
+            JDK_VERSION = "${map.jdk_version}"                                  // jdk版本
+            //DEPLOY_FOLDER = "${map.deploy_folder}"                              // 服务器上部署所在的文件夹名称
+            SETTING_FILE = "${map.setting_file}"
+            KUBECONFIG_CREDENTIAL_ID = "${map.kubeconfig_credential_id}"
+            NACOS_SVC = "${map.nacos_svc}"
+            NACOS_NAMESPACE = "${map.nacos_namespace}"
+            FILE_UPLOAD = "${map.file_upload}"
             MODULES = "${map.modules}"
 
             COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
