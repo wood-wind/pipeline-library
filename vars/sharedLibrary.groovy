@@ -184,7 +184,7 @@ def generateDeploy(key) {
                         credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
                         variable: 'KUBECONFIG')
                 ]) {
-                    sh 'export $(grep -v "^#" `pwd`/tools/env/${ENV_FILE}.env | xargs)'
+       //             sh 'export $(grep -v "^#" `pwd`/tools/env/${ENV_FILE}.env | xargs)'
                     sh 'cd `pwd`'
                     sh 'envsubst < ./tools/${IS_SIDECAR}deploy/' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
                     sh 'envsubst < ./tools/${IS_SIDECAR}deploy/' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
@@ -214,7 +214,8 @@ def codeQualityAnalysis() {
  * Maven编译构建
  */
 def mavenBuildProject(MODULES) {
-    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker -Dbuild_env=${ENV_FILE}'
+    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
+  // -Dbuild_env=${ENV_FILE}
 }
 
 def generateStage(key) {
