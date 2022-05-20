@@ -13,9 +13,9 @@ def call(Map map) {
                 //label 'maven'
             }
         }
-        parameters {
+    //    parameters {
     //        choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1.release 2.dev分支')
-        }
+    //    }
 
         environment {
             DOCKER_CREDENTIAL_ID = "${map.docker_credential_id}"                // docker容器镜像仓库账号信任id
