@@ -14,9 +14,7 @@ def call(Map map) {
             }
         }
         parameters {
-            choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1.release 2.dev分支')
-//            choice(name: 'ENV_FILE', choices: ['halosee','cs','cs-master','crrc','halosee-new'], description: '环境变量')
-            choice(name: 'IS_DEPLOY', choices: ['Y',''], description: '是否部署,Y或置空')
+    //        choice(name: 'DEPLOY_MODE', choices: [GlobalVars.release, GlobalVars.dev],description: '选择部署方式  1.release 2.dev分支')
         }
 
         environment {
@@ -77,11 +75,6 @@ def call(Map map) {
                         def pom = new XmlParser().parseText(pomFile)
                         def gavMap = [:]
                         env.TAG_VERSION =  pom['version'].text().trim()
-
-                        env.IS_SIDECAR = ""
-                        if (GlobalVars.release == "dev") {
-                            env.IS_SIDECAR = "Y"
-                        }
                         sh 'env'
                     }
                 }
@@ -135,7 +128,7 @@ def call(Map map) {
 //                //    expression { return (IS_DOCKER_BUILD == true }
 //                }
                 steps {
-                    container('maven') {
+                    container('${PIPELINE_AGENT_LABLE}') {
                         script {
                             sh 'echo "build"'
                             mavenBuildProject(MODULES)
@@ -186,7 +179,7 @@ def call(Map map) {
 def generateDeploy(key) {
     return {
         stage('deploy ' + key) {
-            container ('maven') {
+            container ('${PIPELINE_AGENT_LABLE}') {
                 withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                 }
