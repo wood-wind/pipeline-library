@@ -7,7 +7,6 @@ import shared.library.common.*
 def call(Map map) {
     echo "开始构建，进入主方法..."
     pipeline {
-        // 指定流水线每个阶段在哪里执行(物理机、虚拟机、Docker容器) agent any
         agent {
             node {
                 label "${map.pipeline_agent_lable}"
@@ -21,7 +20,7 @@ def call(Map map) {
         }
 
         environment {
-            DOCKER_CREDENTIAL_ID = "${map.docker_credential_id}"    // docker容器镜像仓库账号信任id
+            DOCKER_CREDENTIAL_ID = "${map.docker_credential_id}"                // docker容器镜像仓库账号信任id
             REGISTRY = "${map.registry}"                                        // docker镜像仓库注册地址
             DOCKER_REPO_NAMESPACE = "${map.docker_repo_namespace}"              // docker仓库命名空间名称
             DEPLOY_NAMESPACE = "${map.deploy_namespace}"                        // 部署的项目名称
@@ -33,6 +32,11 @@ def call(Map map) {
             NACOS_SVC = "${map.nacos_svc}"
             NACOS_NAMESPACE = "${map.nacos_namespace}"
             FILE_UPLOAD = "${map.file_upload}"
+            IMAGE1 = "${map.image1}"
+            IMAGE2 = "${map.image2}"
+            IMAGE3 = "${map.image3}"
+            K8S_APPLY = "${map.k8s_apply}"
+            K8S_APPLY_SIDECAR = "${map.k8s_apply_sidecar}"
             MODULES = "${map.modules}"
 
             COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
@@ -124,11 +128,11 @@ def call(Map map) {
 
 
             stage('build') {
-                when {
-                    beforeAgent true
-                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                //    expression { return (IS_DOCKER_BUILD == true }
-                }
+//                when {
+//                    beforeAgent true
+//                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
+//                //    expression { return (IS_DOCKER_BUILD == true }
+//                }
                 steps {
                     container('maven') {
                         script {
@@ -140,10 +144,10 @@ def call(Map map) {
             }
 
             stage('parallel build modules images') {
-                when {
-                    beforeAgent true
-                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                }
+//                when {
+//                    beforeAgent true
+//                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
+//                }
                 steps {
                     script {
                             echo 'build modules images'
@@ -158,9 +162,9 @@ def call(Map map) {
 
             stage('Kubernetes deploy') {
                 when {
-                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                    expression {
-                        return (IS_DEPLOY == "Y")  // 是否进行云原生K8S集群部署
+                    anyOf {
+                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
+                        environment name: 'BRANCH_NAME', value: GlobalVars.dev
                     }
                 }
                 steps {
@@ -190,7 +194,6 @@ def generateDeploy(key) {
                         variable: 'KUBECONFIG')
                 ]) {
        //             sh 'export $(grep -v "^#" `pwd`/tools/env/${ENV_FILE}.env | xargs)'
-                    sh 'cd `pwd`'
                     sh 'envsubst < ./tools/${IS_SIDECAR}deploy/' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
                     sh 'envsubst < ./tools/${IS_SIDECAR}deploy/' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
                 }
@@ -219,7 +222,7 @@ def codeQualityAnalysis() {
  * Maven编译构建
  */
 def mavenBuildProject(MODULES) {
-    sh 'mvnd -gs `pwd`/tools/maven/${SETTING_FILE}.xml clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
+    sh 'mvnd -gs ${SETTING_FILE} clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
   // -Dbuild_env=${ENV_FILE}
 }
 
@@ -230,8 +233,8 @@ def generateStage(key) {
                 echo 'build   ' + key
                 withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                    sh 'docker pull ${REGISTRY}/halosee/nginx:stable-alpine'
-                    sh 'docker pull ${REGISTRY}/halosee/node:12-alpine'
+                    sh 'docker pull ${IMAGE1}'
+                    sh 'docker pull ${IMAGE2}'
                 }
                 sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
                 withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
