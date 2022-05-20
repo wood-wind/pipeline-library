@@ -37,6 +37,7 @@ def call(Map map) {
             IMAGE3 = "${map.image3}"
             K8S_APPLY = "${map.k8s_apply}"
             K8S_APPLY_SIDECAR = "${map.k8s_apply_sidecar}"
+            IS_SIDECAR = "${map.is_sidecar}"
             MODULES = "${map.modules}"
 
             COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
@@ -193,9 +194,13 @@ def generateDeploy(key) {
                         credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
                         variable: 'KUBECONFIG')
                 ]) {
-       //             sh 'export $(grep -v "^#" `pwd`/tools/env/${ENV_FILE}.env | xargs)'
-                    sh 'envsubst < ./tools/${IS_SIDECAR}deploy/' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
-                    sh 'envsubst < ./tools/${IS_SIDECAR}deploy/' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
+                    if ( ${IS_SIDECAR} == "Y" && ${BRANCH_NAME} == "dev"){
+                        sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
+                        sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
+                    } else {
+                        sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
+                        sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
+                    }
                 }
             }
         }
@@ -255,3 +260,20 @@ def k8sDeploy() {
     // 执行部署
     Kubernetes.deploy(this)
 }
+
+//def version = "1.2"
+//switch(GIT_BRANCH) {
+//    case "develop":
+//        result = "dev"
+//        break
+//    case ["master", "support/${version}".toString()]:
+//        result = "list"
+//        break
+//    case "support/${version}":
+//        result = "sup"
+//        break
+//    default:
+//        result = "def"
+//        break
+//}
+//echo "${result}"
