@@ -164,8 +164,8 @@ def call(Map map) {
             stage('Kubernetes deploy') {
                 when {
                     anyOf {
-                        environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        environment name: 'BRANCH_NAME', value: GlobalVars.dev
+        //                environment name: 'DEPLOY_MODE', value: GlobalVars.release
+                        environment name: 'BRANCH_NAME', value: GlobalVars.feature-devops-v3.1.1
                     }
                 }
                 steps {
