@@ -21,7 +21,7 @@ def call(Map map) {
         }
 
         environment {
-            DOCKER_CREDENTIALS_ID = "${map.docker_credentials_id}"    // docker容器镜像仓库账号信任id
+            DOCKER_CREDENTIAL_ID = "${map.docker_credential_id}"    // docker容器镜像仓库账号信任id
             REGISTRY = "${map.registry}"                                        // docker镜像仓库注册地址
             DOCKER_REPO_NAMESPACE = "${map.docker_repo_namespace}"              // docker仓库命名空间名称
             DEPLOY_NAMESPACE = "${map.deploy_namespace}"                        // 部署的项目名称
@@ -182,7 +182,7 @@ def generateDeploy(key) {
     return {
         stage('deploy ' + key) {
             container ('maven') {
-                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIALS_ID",)]) {
+                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                 }
                 withCredentials([kubeconfigFile(
@@ -228,13 +228,13 @@ def generateStage(key) {
         stage('build image ' + key) {
             container('maven') {
                 echo 'build   ' + key
-                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIALS_ID",)]) {
+                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                     sh 'docker pull ${REGISTRY}/halosee/nginx:stable-alpine'
                     sh 'docker pull ${REGISTRY}/halosee/node:12-alpine'
                 }
                 sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
-                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIALS_ID",)]) {
+                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                     sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION'
                     sh 'docker tag  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
