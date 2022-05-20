@@ -65,7 +65,7 @@ def call(Map map) {
                 }
             }
 
-            stage("fetch pom version") {
+            stage("init perameter") {
                 steps {
                     script {
                         def pomFile = readFile(file: 'pom.xml')
@@ -77,6 +77,7 @@ def call(Map map) {
                             env.IS_SIDECAR = "Y"
                         } else {
                             env.IS_SIDECAR = ""
+                            echo "IS_SIDECAR=+${IS_SIDECAR}"
                         }
                         sh 'env'
                     }
