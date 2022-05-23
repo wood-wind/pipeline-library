@@ -158,6 +158,7 @@ def call(Map map) {
                 when {
                     anyOf {
         //                environment name: 'DEPLOY_MODE', value: GlobalVars.release
+                        beforeAgent true
                         branch 'feature-pipeline-library-v3.1.1'
                     }
                 }
