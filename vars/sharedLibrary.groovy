@@ -189,13 +189,15 @@ def generateDeploy(key) {
                         variable: 'KUBECONFIG')
                 ]) {
                     sh 'echo "${IS_SIDECAR}"'
-                    if ( ${IS_SIDECAR} == "Y" ){
-                        sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
-                        sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
-                    } else {
+                    sh 'echo "${K8S_APPLY_SIDECAR}"'
+                    sh 'echo "${K8S_APPLY}"'
+//                    if ( ${IS_SIDECAR} == "Y1" ){
+//                        sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
+//                        sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
+//                    } else {
                         sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
                         sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
-                    }
+//                    }
                 }
             }
         }
