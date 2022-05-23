@@ -155,14 +155,15 @@ def call(Map map) {
                 }
 
             stage('Kubernetes deploy') {
-                when {
-        //            environment name: 'DEPLOY_MODE', value: GlobalVars.release
-        //            beforeAgent true
-                    branch 'feature-pipeline-library-v3.1.1'
-                }
+//                when {
+//        //            environment name: 'DEPLOY_MODE', value: GlobalVars.release
+//        //            beforeAgent true
+//                    branch 'feature-pipeline-library-v3.1.1'
+//                }
                 steps {
                     script {
                         echo 'deploy'
+                        sh 'echo $MODULES'
                         moduleDeployList = MODULES.split(",").findAll { it }.collect { it.trim() }
                         sh 'echo $moduleDeployList'
                         def parallelDeploy = moduleDeployList.collectEntries { key ->
