@@ -77,8 +77,8 @@ def call(Map map) {
                         env.TAG_VERSION =  pom['version'].text().trim()
 
 
-                        if (${env.BRANCH_NAME} == 'dev' && ${env.IS_SIDECAR} == 'Y') {
-                            env.K8S_APPLY = ${K8S_APPLY_SIDECAR}
+                        if (BRANCH_NAME == 'dev' && IS_SIDECAR == 'Y') {
+                            K8S_APPLY = K8S_APPLY_SIDECAR
                         }
 
                         sh 'env'
