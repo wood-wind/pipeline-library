@@ -76,6 +76,10 @@ def call(Map map) {
                         def gavMap = [:]
                         env.TAG_VERSION =  pom['version'].text().trim()
                         sh 'env'
+
+                        if (${BRANCH_NAME} == 'dev' && ${IS_SIDECAR} == 'Y') {
+                            env.K8S_APPLY = ${K8S_APPLY_SIDECAR}
+                        }
                     }
                 }
             }
@@ -191,13 +195,8 @@ def generateDeploy(key) {
                     sh 'echo "${IS_SIDECAR}"'
                     sh 'echo "${K8S_APPLY_SIDECAR}"'
                     sh 'echo "${K8S_APPLY}"'
-//                    if ( ${IS_SIDECAR} == "Y1" ){
-//                        sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
-//                        sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
-//                    } else {
-                        sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
-                        sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
-//                    }
+                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
+                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
                 }
             }
         }
