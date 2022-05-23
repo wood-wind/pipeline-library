@@ -128,7 +128,7 @@ def call(Map map) {
 //                //    expression { return (IS_DOCKER_BUILD == true }
 //                }
                 steps {
-                    container('${map.pipeline_agent_lable}') {
+                    container("${map.pipeline_agent_lable}") {
                         script {
                             sh 'echo "build"'
                             mavenBuildProject(MODULES)
@@ -179,7 +179,7 @@ def call(Map map) {
 def generateDeploy(key) {
     return {
         stage('deploy ' + key) {
-            container ('${map.pipeline_agent_lable}') {
+            container ("${map.pipeline_agent_lable}") {
                 withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                 }
