@@ -158,7 +158,7 @@ def call(Map map) {
                 when {
                     anyOf {
         //                environment name: 'DEPLOY_MODE', value: GlobalVars.release
-                        branch 'feature-devops-v3.1.1'
+                        branch 'feature-pipeline-library-v3.1.1'
                     }
                 }
                 steps {
