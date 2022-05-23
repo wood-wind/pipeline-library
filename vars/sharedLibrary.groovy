@@ -163,8 +163,9 @@ def call(Map map) {
                 steps {
                     script {
                         echo 'deploy'
-                        moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
-                        def parallelDeploy = moduleList.collectEntries { key ->
+                        moduleDeployList = MODULES.split(",").findAll { it }.collect { it.trim() }
+                        echo '$moduleDeployList'
+                        def parallelDeploy = moduleDeployList.collectEntries { key ->
                             ["deploy  ${key}": generateDeploy(key)]
                         }
                         parallel parallelDeploy
