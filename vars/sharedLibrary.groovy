@@ -180,7 +180,7 @@ def call(Map map) {
 def generateDeploy(key) {
     return {
         stage('deploy ' + key) {
-            container ("${map.pipeline_agent_lable}") {
+            container ("maven") {
                 withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                 }
