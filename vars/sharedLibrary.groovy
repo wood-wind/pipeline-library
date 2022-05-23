@@ -188,7 +188,8 @@ def generateDeploy(key) {
                         credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
                         variable: 'KUBECONFIG')
                 ]) {
-                    if ( ${IS_SIDECAR} == "Y" && ${BRANCH_NAME} == "dev"){
+                    sh 'echo "${IS_SIDECAR}"'
+                    if ( ${IS_SIDECAR} == "Y" ){
                         sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
                         sh 'envsubst < ${K8S_APPLY_SIDECAR}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
                     } else {
