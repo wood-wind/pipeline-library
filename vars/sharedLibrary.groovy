@@ -24,6 +24,7 @@ def call(Map map) {
             DEPLOY_NAMESPACE = "${map.deploy_namespace}"                        // 部署的项目名称
             PIPELINE_AGENT_LABLE = "${map.pipeline_agent_lable}"                // 工作容器的标签,跑流水线的容器
             JDK_VERSION = "${map.jdk_version}"                                  // jdk版本
+            BUILD_TYPE = "${map.build_type}"                                    // 编译方式
             //DEPLOY_FOLDER = "${map.deploy_folder}"                              // 服务器上部署所在的文件夹名称
             SETTING_FILE = "${map.setting_file}"
             KUBECONFIG_CREDENTIAL_ID = "${map.kubeconfig_credential_id}"
@@ -136,8 +137,17 @@ def call(Map map) {
                 steps {
                     container("${map.pipeline_agent_lable}") {
                         script {
-                            sh 'echo "build"'
-                            Maven.mavenBuildProject(this)
+                            switch(BUILD_TYPE){
+                                case "mvn":
+                                    sh 'echo "mvnd"'
+                                    Maven.mvnBuildProject(this)
+                                case "mvnd":
+                                    sh 'echo "mvnd"'
+                                    Maven.mvndBuildProject(this)
+                                default:
+                                    sh 'echo "请选择编译方式，mvnd或其他."'
+                            }
+
                         }
                     }
                 }
