@@ -8,8 +8,8 @@ package shared.library.common
  */
 class Maven implements Serializable {
 
-    static def mavenBuildProject(map) {
-        ctx.sh "mvnd -gs ${SETTING_FILE} clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker "
+    static def mavenBuildProject(ctx) {
+        ctx.sh "mvnd -gs ${ctx.SETTING_FILE} clean package  -pl ${ctx.MODULES}  -am    -Dmaven.test.skip=true -DskipDocker "
     }
 
     /**
