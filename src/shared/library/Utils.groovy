@@ -33,7 +33,7 @@ class Utils implements Serializable {
         return script.readFile('pom.xml')
     }
 
-    def mavenBuildProject(MODULES) {
+    static def mavenBuildProject(MODULES) {
         sh 'mvnd -gs ${SETTING_FILE} clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
         // -Dbuild_env=${ENV_FILE}
     }
