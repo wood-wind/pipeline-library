@@ -19,7 +19,12 @@ import hudson.model.*;
  */
 class Utils implements Serializable {
 
-    static def mavenBuildProject(map) {
-        sh 'mvnd -gs ${map.SETTING_FILE} clean package  -pl ${map.MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
+    static def getShEchoResult(ctx, cmd) {
+        def getShEchoResultCmd = "ECHO_RESULT=`${cmd}`\necho \${ECHO_RESULT}"
+        return ctx.sh(
+                script: getShEchoResultCmd,
+                returnStdout: true,
+                encoding: 'UTF-8'
+        ).trim()
     }
 }

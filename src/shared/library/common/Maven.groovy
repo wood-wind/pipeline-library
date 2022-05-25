@@ -8,6 +8,10 @@ package shared.library.common
  */
 class Maven implements Serializable {
 
+    static def mavenBuildProject(map) {
+        ctx.sh "mvnd -gs ${SETTING_FILE} clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker "
+    }
+
     /**
      * 更快的构建工具mvnd 多个的守护进程来服务构建请求来达到并行构建的效果  源码: https://github.com/apache/maven-mvnd
      */

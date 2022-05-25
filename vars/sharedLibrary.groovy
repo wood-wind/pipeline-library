@@ -137,7 +137,7 @@ def call(Map map) {
                     container("${map.pipeline_agent_lable}") {
                         script {
                             sh 'echo "build"'
-                            Utils.mavenBuildProject(map)
+                            Maven.mavenBuildProject(MODULES,SETTING_FILE)
                         }
                     }
                 }
