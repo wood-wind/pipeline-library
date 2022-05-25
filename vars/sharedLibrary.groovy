@@ -137,7 +137,7 @@ def call(Map map) {
                     container("${map.pipeline_agent_lable}") {
                         script {
                             sh 'echo "build"'
-                            Utils.mavenBuildProject(MODULES)
+                            Utils.mavenBuildProject(MODULES,SETTING_FILE)
                         }
                     }
                 }
@@ -169,9 +169,7 @@ def call(Map map) {
                 steps {
                     script {
                         echo 'deploy'
-                        sh 'echo $MODULES'
                         moduleDeployList = MODULES.split(",").findAll { it }.collect { it.trim() }
-                        sh 'echo $moduleDeployList'
                         def parallelDeploy = moduleDeployList.collectEntries { key ->
                             ["deploy  ${key}": generateDeploy(key)]
                         }
