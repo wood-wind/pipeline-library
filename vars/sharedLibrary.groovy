@@ -142,11 +142,14 @@ def call(Map map) {
                                 case "mvn":
                                     sh 'echo "mvn"'
                                     Maven.mvnBuildProject(this)
+                                    break
                                 case "mvnd":
                                     sh 'echo "mvnd"'
                                     Maven.mvndBuildProject(this)
+                                    break
                                 default:
                                     sh 'echo "请选择编译方式，mvnd或其他."'
+                                    break
                             }
 
                         }
