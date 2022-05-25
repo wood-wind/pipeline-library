@@ -32,4 +32,9 @@ class Utils implements Serializable {
     def getBuildProperties(){
         return script.readFile('pom.xml')
     }
+
+    def mavenBuildProject(MODULES) {
+        sh 'mvnd -gs ${SETTING_FILE} clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
+        // -Dbuild_env=${ENV_FILE}
+    }
 }

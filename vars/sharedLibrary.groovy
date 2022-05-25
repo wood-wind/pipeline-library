@@ -137,7 +137,7 @@ def call(Map map) {
                     container("${map.pipeline_agent_lable}") {
                         script {
                             sh 'echo "build"'
-                            mavenBuildProject(MODULES)
+                            Utils.mavenBuildProject(MODULES)
                         }
                     }
                 }
@@ -224,10 +224,10 @@ def codeQualityAnalysis() {
 /**
  * Maven编译构建
  */
-def mavenBuildProject(MODULES) {
-    sh 'mvnd -gs ${SETTING_FILE} clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
-  // -Dbuild_env=${ENV_FILE}
-}
+//def mavenBuildProject(MODULES) {
+//    sh 'mvnd -gs ${SETTING_FILE} clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
+//  // -Dbuild_env=${ENV_FILE}
+//}
 
 def generateStage(key) {
     return {
