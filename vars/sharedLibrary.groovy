@@ -181,7 +181,27 @@ def call(Map map) {
                         echo 'deploy'
                         moduleDeployList = MODULES.split(",").findAll { it }.collect { it.trim() }
                         def parallelDeploy = moduleDeployList.collectEntries { key ->
-                            ["deploy  ${key}": generateDeploy(key)]
+                            ["deploy  ${key}": generateDeploy(key)
+                                {
+                                    stage('deploy ' + key) {
+                                        container ("maven") {
+                                            withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+                                                sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+                                            }
+                                            withCredentials([kubeconfigFile(
+                                                    credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
+                                                    variable: 'KUBECONFIG')
+                                            ]) {
+                                                sh 'echo "${IS_SIDECAR}"'
+                                                sh 'echo "${K8S_APPLY_SIDECAR}"'
+                                                sh 'echo "${K8S_APPLY}"'
+                                                sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
+                                                sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                         parallel parallelDeploy
                     }
@@ -191,27 +211,27 @@ def call(Map map) {
     }
 }
 
-def generateDeploy(key) {
-    return {
-        stage('deploy ' + key) {
-            container ("maven") {
-                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                }
-                withCredentials([kubeconfigFile(
-                        credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
-                        variable: 'KUBECONFIG')
-                ]) {
-                    sh 'echo "${IS_SIDECAR}"'
-                    sh 'echo "${K8S_APPLY_SIDECAR}"'
-                    sh 'echo "${K8S_APPLY}"'
-                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
-                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
-                }
-            }
-        }
-    }
-}
+//def generateDeploy(key) {
+//    return {
+//        stage('deploy ' + key) {
+//            container ("maven") {
+//                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+//                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+//                }
+//                withCredentials([kubeconfigFile(
+//                        credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
+//                        variable: 'KUBECONFIG')
+//                ]) {
+//                    sh 'echo "${IS_SIDECAR}"'
+//                    sh 'echo "${K8S_APPLY_SIDECAR}"'
+//                    sh 'echo "${K8S_APPLY}"'
+//                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
+//                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
+//                }
+//            }
+//        }
+//    }
+//}
 
 /**
  * 代码质量分析
