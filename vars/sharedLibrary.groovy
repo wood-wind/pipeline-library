@@ -172,11 +172,9 @@ def call(Map map) {
 //                            }
                         for (m in moduleList) {
                             moduleStages["${m}"] = {
-                                node {
                                     stage("${m}") {
-                                        echo '${m}'
+                                        sh 'echo ${m}'
                                     }
-                                }
                             }
                         }
     //                    parallel parallelStagesMap
