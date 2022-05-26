@@ -166,10 +166,20 @@ def call(Map map) {
                     script {
                             echo 'build modules images'
                             moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
-                            def parallelStagesMap = moduleList.collectEntries { key ->
-                                ["build && push  ${key}": generateStage(key)]
+//                            def parallelStagesMap = moduleList.collectEntries { key ->
+//                                ["build && push  ${key}": generateStage(key)]
+//                            }
+                            for (m in moduleList) {
+                                module["${m}"] = {
+                                    node {
+                                        stage("${m}") {
+                                            echo '${m}'
+                                        }
+                                    }
+                                }
                             }
-                            parallel parallelStagesMap
+        //                    parallel parallelStagesMap
+                            parallel module
                         }
                     }
                 }
@@ -236,10 +246,7 @@ def codeQualityAnalysis() {
 /**
  * Maven编译构建
  */
-//def mavenBuildProject(MODULES) {
-//    sh 'mvnd -gs ${SETTING_FILE} clean package  -pl ${MODULES}  -am    -Dmaven.test.skip=true -DskipDocker '
-//  // -Dbuild_env=${ENV_FILE}
-//}
+
 
 def generateStage(key) {
     return {
