@@ -164,22 +164,23 @@ def call(Map map) {
 //                }
                 steps {
                     script {
-                            echo 'build modules images'
-                            moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
+                        echo 'build modules images'
+                        def module = [:]
+                        moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
 //                            def parallelStagesMap = moduleList.collectEntries { key ->
 //                                ["build && push  ${key}": generateStage(key)]
 //                            }
-                            for (m in moduleList) {
-                                module["${m}"] = {
-                                    node {
-                                        stage("${m}") {
-                                            echo '${m}'
-                                        }
+                        for (m in moduleList) {
+                            module["${m}"] = {
+                                node {
+                                    stage("${m}") {
+                                        echo '${m}'
                                     }
                                 }
                             }
-        //                    parallel parallelStagesMap
-                            parallel module
+                        }
+    //                    parallel parallelStagesMap
+                        parallel module
                         }
                     }
                 }
