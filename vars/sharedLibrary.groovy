@@ -165,13 +165,13 @@ def call(Map map) {
                 steps {
                     script {
                         echo 'build modules images'
-                        def module = [:]
+                        def moduleStages = [:]
                         moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
 //                            def parallelStagesMap = moduleList.collectEntries { key ->
 //                                ["build && push  ${key}": generateStage(key)]
 //                            }
                         for (m in moduleList) {
-                            module["${m}"] = {
+                            moduleStages["${m}"] = {
                                 node {
                                     stage("${m}") {
                                         echo '${m}'
@@ -180,7 +180,7 @@ def call(Map map) {
                             }
                         }
     //                    parallel parallelStagesMap
-                        parallel module
+                        parallel moduleStages
                         }
                     }
                 }
