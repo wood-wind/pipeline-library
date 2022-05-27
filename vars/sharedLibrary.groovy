@@ -172,6 +172,7 @@ def call(Map map) {
                             moduleStages["${key}"] = {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
+                                        sh 'echo $IMAGES'
                                         for (image in IMAGES) {
                                             Docker.pull(this,image)
                                         }
