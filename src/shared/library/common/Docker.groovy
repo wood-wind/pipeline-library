@@ -97,10 +97,10 @@ class Docker implements Serializable {
     /**
      *  拉取远程仓库Docker镜像
      */
-    static def pull(ctx) {
+    static def pull(ctx,image) {
         //def imageFullName = "${ctx.DOCKER_REPO_NAMESPACE}/${imageName}:${imageTag}"
         ctx.withCredentials([ctx.usernamePassword(credentialsId: "${ctx.DOCKER_CREDENTIAL_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-            ctx.sh "docker pull ${ctx.IMAGE1}"
+            ctx.sh "docker pull " + image
         }
     }
 

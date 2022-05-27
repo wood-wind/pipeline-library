@@ -31,9 +31,7 @@ def call(Map map) {
             NACOS_SVC = "${map.nacos_svc}"
             NACOS_NAMESPACE = "${map.nacos_namespace}"
             FILE_UPLOAD = "${map.file_upload}"
-            IMAGE1 = "${map.image1}"
-            IMAGE2 = "${map.image2}"
-            IMAGE3 = "${map.image3}"
+            IMAGES = "${map.images}"                                            // 需要额外拉取的镜像
             K8S_APPLY = "${map.k8s_apply}"
             K8S_APPLY_SIDECAR = "${map.k8s_apply_sidecar}"
             IS_SIDECAR = "${map.is_sidecar}"
@@ -174,8 +172,10 @@ def call(Map map) {
                             moduleStages["${key}"] = {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
-                                        echo 'build ' + key
-                                        Docker.pull(this)
+                                        for (image in IMAGES) {
+                                            Docker.pull(this,image)
+                                        }
+
                                         sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
                                         withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                                             sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
