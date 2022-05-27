@@ -174,12 +174,8 @@ def call(Map map) {
                             moduleStages["${key}"] = {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
-                                        echo 'build   ' + key
-                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                                            sh 'docker pull ${IMAGE1}'
-                                            sh 'docker pull ${IMAGE2}'
-                                        }
+                                        echo 'build ' + key
+                                        Docker.pull(this)
                                         sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
                                         withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                                             sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
