@@ -163,18 +163,20 @@ def call(Map map) {
                 steps {
                     script {
                         echo 'build modules images'
-                        def moduleStages = [:]
+                        def moduleBuild = [:]
                         moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
 //                            def parallelStagesMap = moduleList.collectEntries { key ->
 //                                ["build && push  ${key}": generateStage(key)]
 //                            }
                         for (key in moduleList) {
-                            moduleStages["${key}"] = {
+                            moduleBuild["${key}"] = {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
-                                        sh 'echo $IMAGES'
                                         for (image in IMAGES) {
-                                            Docker.pull(this,image)
+                                            withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+                                                sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+                                                sh 'docker pull ${image}'
+                                            }
                                         }
 
                                         sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
@@ -189,7 +191,7 @@ def call(Map map) {
                             }
                         }
     //                    parallel parallelStagesMap
-                        parallel moduleStages
+                        parallel moduleBuild
                         }
                     }
                 }
@@ -202,12 +204,27 @@ def call(Map map) {
                 }
                 steps {
                     script {
-                        echo 'deploy'
+                        def moduleDeploy = [:]
                         moduleDeployList = MODULES.split(",").findAll { it }.collect { it.trim() }
-                        def parallelDeploy = moduleDeployList.collectEntries { key ->
-                            ["deploy  ${key}": generateDeploy(key)]
+                        for (key in moduleDeployList) {
+                            moduleDeploy["${key}"] = {
+                                stage("${key}") {
+                                    container ("${map.pipeline_agent_lable}") {
+                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+                                        }
+                                        withCredentials([kubeconfigFile(
+                                                credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
+                                                variable: 'KUBECONFIG')
+                                        ]) {
+                                            sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
+                                            sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
+                                        }
+                                    }
+                                }
+                            }
                         }
-                        parallel parallelDeploy
+                        parallel moduleDeploy
                     }
                 }
             }
