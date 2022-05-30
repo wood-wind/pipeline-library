@@ -172,8 +172,8 @@ def call(Map map) {
                             moduleBuild["${key}"] = {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
-                                        def IMAGE1 = 'k8s1:30002/halosee/nginx:stable-alpine'
-                                        def IMAGE2 = 'k8s1:30002/halosee/node:12-alpine'
+                                        env.IMAGE1 = 'k8s1:30002/halosee/nginx:stable-alpine'
+                                        env.IMAGE2 = 'k8s1:30002/halosee/node:12-alpine'
 //                                        for (image in IMAGES) {
                                         withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                                             sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
