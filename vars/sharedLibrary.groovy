@@ -172,13 +172,12 @@ def call(Map map) {
                             moduleBuild["${key}"] = {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
-                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                                            sh 'echo $IMAGES'
-                                            for (image in IMAGES) {
-                                                sh 'echo $image'
-                                                sh 'docker pull ${image}'
-                                            }
+                                        for (image in IMAGES) {
+                                            withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+                                                sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+                                                    sh 'echo $image'
+                                                    sh 'docker pull ${image}'
+                                                }
 //                                            Docker.pull(this,image)
                                         }
 
