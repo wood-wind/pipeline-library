@@ -139,11 +139,11 @@ def call(Map map) {
                             switch(BUILD_TYPE){
                                 case "mvn":
                                     sh 'echo "mvn"'
-                                    Maven.mvnBuildProject(this)
+//                                    Maven.mvnBuildProject(this)
                                     break
                                 case "mvnd":
                                     sh 'echo "mvnd"'
-                                    Maven.mvndBuildProject(this)
+//                                    Maven.mvndBuildProject(this)
                                     break
                                 default:
                                     sh 'echo "请选择编译方式，mvnd或其他."'
@@ -180,7 +180,8 @@ def call(Map map) {
 //                                            sh 'docker pull ${IMAGE1}'
 //                                            sh 'docker pull ${IMAGE2}'
 //                                            }
-                                            sh 'echo "$image"'
+                                            sh 'echo "111"'
+                                            sh 'echo "${image}"'
                                             Docker.pull(this,image)
                                         }
 
