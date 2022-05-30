@@ -99,6 +99,8 @@ class Docker implements Serializable {
      */
     static def pull(ctx,image) {
         //def imageFullName = "${ctx.DOCKER_REPO_NAMESPACE}/${imageName}:${imageTag}"
+        def DOCKER_USERNAME = ctx.env['DOCKER_USERNAME']
+        def DOCKER_PASSWORD = ctx.env['DOCKER_PASSWORD']
         ctx.withCredentials([ctx.usernamePassword(credentialsId: "${ctx.DOCKER_CREDENTIAL_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
             ctx.sh """ docker login ${ctx.REGISTRY} --username=${ctx.DOCKER_USERNAME} --password=${ctx.DOCKER_PASSWORD}
                        docker pull ${image}
