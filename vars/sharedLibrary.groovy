@@ -180,7 +180,7 @@ def call(Map map) {
 //                                            sh 'docker pull ${IMAGE1}'
 //                                            sh 'docker pull ${IMAGE2}'
 //                                            }
-                                            sh 'echo $image'
+                                            sh 'echo ${image}'
                                             Docker.pull(this,image)
                                         }
 
