@@ -160,7 +160,7 @@ def call(Map map) {
 //                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
 //                }
                 steps {
-                    ontainer("${map.pipeline_agent_lable}") {
+                    container("${map.pipeline_agent_lable}") {
                         script {
                             echo 'build modules images'
                             def moduleBuild = [:]
