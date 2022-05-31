@@ -168,13 +168,13 @@ def call(Map map) {
                         for (key in moduleList) {
                             moduleBuild["${key}"] = {
                                 stage("${key}") {
-                                    container("${map.pipeline_agent_lable}") {
+//                                    container("${map.pipeline_agent_lable}") {
                                         for (imageName in imagesList) {
                                             Docker.pull(this,imageName)
                                         }
                                         Docker.build(this,key)
                                         Docker.push(this,key)
-                                    }
+//                                    }
                                 }
                             }
                         }
@@ -197,9 +197,6 @@ def call(Map map) {
                             moduleDeploy["${key}"] = {
                                 stage("${key}") {
                                     container ("${map.pipeline_agent_lable}") {
-//                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-//                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-//                                        }
                                         Kubernetes.deploy(this,key)
                                     }
                                 }
