@@ -160,29 +160,32 @@ def call(Map map) {
 //                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
 //                }
                 steps {
-                    script {
-                        echo 'build modules images'
-                        def moduleBuild = [:]
-                        moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
-                        imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
-                        for (key in moduleList) {
-                            moduleBuild["${key}"] = {
-                                stage("${key}") {
-                                    container("${map.pipeline_agent_lable}") {
-                                        for (imageName in imagesList) {
-                                            Docker.pull(this,imageName)
+                    ontainer("${map.pipeline_agent_lable}") {
+                        script {
+                            echo 'build modules images'
+                            def moduleBuild = [:]
+                            moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
+                            imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
+                            for (key in moduleList) {
+                                moduleBuild["${key}"] = {
+                                    node("${key}") {
+//                                        container("${map.pipeline_agent_lable}") {
+                                            for (imageName in imagesList) {
+                                                Docker.pull(this,imageName)
+                                            }
+                                            Docker.build(this,key)
+                                            Docker.push(this,key)
                                         }
-                                        Docker.build(this,key)
-                                        Docker.push(this,key)
-                                    }
+//                                    }
                                 }
                             }
-                        }
-                            node() {
+//                            node() {
                                 parallel moduleBuild
-                            }
+//                            }
                         }
                     }
+                }
+                }
                 }
 
             stage('Kubernetes deploy') {
