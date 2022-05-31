@@ -197,10 +197,10 @@ def call(Map map) {
                             moduleDeploy["${key}"] = {
                                 stage("${key}") {
                                     container ("${map.pipeline_agent_lable}") {
-                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                                        }
-
+//                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+//                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+//                                        }
+                                        Kubernetes.deploy(this,key)
                                     }
                                 }
                             }
