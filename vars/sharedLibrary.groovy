@@ -181,7 +181,7 @@ def call(Map map) {
 //                                            sh 'docker pull ${IMAGE2}'
 //                                            }
                                             sh 'echo "111"'
-                                            sh 'echo ${imageName}'
+                                            sh "echo $imageName"
                                             Docker.pull(this,"${imageName}")
                                         }
 
