@@ -172,17 +172,17 @@ def call(Map map) {
                             moduleBuild["${key}"] = {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
-                                        env.IMAGE1 = 'k8s1:30002/halosee/nginx:stable-alpine'
-                                        env.IMAGE2 = 'k8s1:30002/halosee/node:12-alpine'
-                                        for (image in IMAGES) {
+//                                        env.IMAGE1 = 'k8s1:30002/halosee/nginx:stable-alpine'
+//                                        env.IMAGE2 = 'k8s1:30002/halosee/node:12-alpine'
+                                        for (imageName in IMAGES) {
 //                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
 //                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
 //                                            sh 'docker pull ${IMAGE1}'
 //                                            sh 'docker pull ${IMAGE2}'
 //                                            }
                                             sh 'echo "111"'
-                                            sh 'echo "${image}"'
-                                            Docker.pull(this,image)
+                                            sh 'echo "${imageName}"'
+                                            Docker.pull(this,imageName)
                                         }
 
                                         sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
