@@ -165,6 +165,7 @@ def call(Map map) {
                         echo 'build modules images'
                         def moduleBuild = [:]
                         moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
+                        imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
 //                            def parallelStagesMap = moduleList.collectEntries { key ->
 //                                ["build && push  ${key}": generateStage(key)]
 //                            }
@@ -172,9 +173,8 @@ def call(Map map) {
                             moduleBuild["${key}"] = {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
-//                                        env.IMAGE1 = 'k8s1:30002/halosee/nginx:stable-alpine'
-//                                        env.IMAGE2 = 'k8s1:30002/halosee/node:12-alpine'
-                                        for (imageName in IMAGES) {
+                                        sh "echo $IMAGES"
+                                        for (imageName in imagesList) {
 //                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
 //                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
 //                                            sh 'docker pull ${IMAGE1}'
