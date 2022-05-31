@@ -168,7 +168,7 @@ def call(Map map) {
                             imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
                             for (key in moduleList) {
                                 moduleBuild["${key}"] = {
-                                    node("${key}") {
+                                    node {
 //                                        container("${map.pipeline_agent_lable}") {
                                             for (imageName in imagesList) {
                                                 Docker.pull(this,imageName)
@@ -186,7 +186,7 @@ def call(Map map) {
                     }
                 }
                 }
-                }
+
 
             stage('Kubernetes deploy') {
                 when {
