@@ -160,7 +160,7 @@ def call(Map map) {
 //                    environment name: 'DEPLOY_MODE', value: GlobalVars.release
 //                }
                 steps {
-                    container("${map.pipeline_agent_lable}") {
+//                    container("${map.pipeline_agent_lable}") {
                         script {
                             echo 'build modules images'
                             def moduleBuild = [:]
@@ -169,20 +169,20 @@ def call(Map map) {
                             for (key in moduleList) {
                                 moduleBuild["${key}"] = {
                                     node {
-//                                        container("${map.pipeline_agent_lable}") {
+                                        container("${map.pipeline_agent_lable}") {
                                             for (imageName in imagesList) {
                                                 Docker.pull(this,imageName)
                                             }
                                             Docker.build(this,key)
                                             Docker.push(this,key)
                                         }
-//                                    }
+                                    }
                                 }
                             }
 //                            node() {
                                 parallel moduleBuild
 //                            }
-                        }
+//                        }
                     }
                 }
                 }
