@@ -168,17 +168,19 @@ def call(Map map) {
                         for (key in moduleList) {
                             moduleBuild["${key}"] = {
                                 stage("${key}") {
-//                                    container("${map.pipeline_agent_lable}") {
+                                    container("${map.pipeline_agent_lable}") {
                                         for (imageName in imagesList) {
                                             Docker.pull(this,imageName)
                                         }
                                         Docker.build(this,key)
                                         Docker.push(this,key)
-//                                    }
+                                    }
                                 }
                             }
                         }
-                        parallel moduleBuild
+                            node() {
+                                parallel moduleBuild
+                            }
                         }
                     }
                 }
