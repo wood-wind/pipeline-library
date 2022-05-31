@@ -45,9 +45,9 @@ class Docker implements Serializable {
         def imageFullName = "${ctx.REGISTRY}/${ctx.DOCKER_REPO_NAMESPACE}/${key}"
         ctx.withCredentials([ctx.usernamePassword(credentialsId: "${ctx.DOCKER_CREDENTIAL_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
             ctx.sh "echo ${ctx.DOCKER_PASSWORD} | docker login ${ctx.REGISTRY} -u ${ctx.DOCKER_USERNAME} --password-stdin"
-            ctx.sh "docker push ${ctx.DOCKER_REPO_REGISTRY}/${imageFullName}:${ctx.TAG_VERSION}"
-            ctx.sh "docker tag ${ctx.DOCKER_REPO_REGISTRY}/${imageFullName}:${ctx.TAG_VERSION} docker push ${ctx.DOCKER_REPO_REGISTRY}/${imageFullName}:latest"
-            ctx.sh "docker push ${ctx.DOCKER_REPO_REGISTRY}/${imageFullName}:latest"
+            ctx.sh "docker push ${imageFullName}:${ctx.TAG_VERSION}"
+            ctx.sh "docker tag ${imageFullName}:${ctx.TAG_VERSION}  ${imageFullName}:latest"
+            ctx.sh "docker push ${imageFullName}:latest"
 
         }
     }
