@@ -174,21 +174,17 @@ def call(Map map) {
                                 stage("${key}") {
                                     container("${map.pipeline_agent_lable}") {
                                         for (imageName in imagesList) {
-//                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-//                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-//                                            sh 'docker pull ${IMAGE1}'
-//                                            sh 'docker pull ${IMAGE2}'
-//                                            }
                                             Docker.pull(this,imageName)
                                         }
-
-                                        sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
-                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                                            sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION'
-                                            sh 'docker tag  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
-                                            sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
-                                        }
+                                        Docker.build(this,key)
+//                                        sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
+                                        Docker.push(this,key)
+//                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+//                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+//                                            sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION'
+//                                            sh 'docker tag  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
+//                                            sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
+//                                        }
                                     }
                                 }
                             }
