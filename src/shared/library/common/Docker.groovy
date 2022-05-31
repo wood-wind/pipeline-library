@@ -14,23 +14,9 @@ class Docker implements Serializable {
     // 镜像标签  也可自定义版本标签用于无需重复构建相同的镜像, 做到复用镜像CD持续部署到多环境中
     static def imageTag = "latest"
 
-    /**
-     *  初始化环境变量
-     */
-    static def initEnv(ctx) {
-        try {
-            //println(Utils.getShEchoResult(this, "whoami"))
-            //def dockerPath = tool 'Docker' //全局配置里 名称Docker 位置/usr/local  使用系统安装好的docker引擎
-            ctx.env.PATH = "${ctx.env.PATH}:/usr/local/bin:/usr/local/go/bin" //添加了系统环境变量上
-        } catch (e) {
-            ctx.println("初始化Docker环境变量失败")
-            ctx.println(e.getMessage())
-        }
-    }
 
     /**
      *  构建Docker镜像
-     *  Docker For Mac 3.1.0以后docker login登录镜像仓库报错 删除 ~/.docker/config.json中的credsStore这行解决
      */
     static def build(ctx, key) {
         def imageFullName = "${ctx.REGISTRY}/${ctx.DOCKER_REPO_NAMESPACE}/${key}"

@@ -42,7 +42,10 @@ class Kubernetes implements Serializable {
      * 声明式执行部署
      */
     static def deploy(ctx) {
-        ctx.sh "kubectl apply -f k8s.yaml"
+        ctx.withCredentials([ctx.kubeconfigFile(credentialsId: "${ctx.KUBECONFIG_CREDENTIAL_ID}",variable: 'KUBECONFIG')]) {
+            ctx.sh "envsubst < ${ctx.K8S_APPLY}/${key}/eip-${key}-service.yaml | kubectl apply -f -"
+            ctx.sh "envsubst < ${ctx.K8S_APPLY}/${key}/eip-${key}-deployment.yaml | kubectl apply -f -"
+        }
     }
 
     /**

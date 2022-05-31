@@ -75,7 +75,6 @@ def call(Map map) {
                         def gavMap = [:]
                         env.TAG_VERSION =  pom['version'].text().trim()
 
-
                         if (BRANCH_NAME == 'dev' && IS_SIDECAR == 'Y') {
                             K8S_APPLY = K8S_APPLY_SIDECAR
                         }
@@ -166,9 +165,6 @@ def call(Map map) {
                         def moduleBuild = [:]
                         moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
                         imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
-//                            def parallelStagesMap = moduleList.collectEntries { key ->
-//                                ["build && push  ${key}": generateStage(key)]
-//                            }
                         for (key in moduleList) {
                             moduleBuild["${key}"] = {
                                 stage("${key}") {
@@ -177,19 +173,11 @@ def call(Map map) {
                                             Docker.pull(this,imageName)
                                         }
                                         Docker.build(this,key)
-//                                        sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
                                         Docker.push(this,key)
-//                                        withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-//                                            sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-//                                            sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION'
-//                                            sh 'docker tag  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
-//                                            sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
-//                                        }
                                     }
                                 }
                             }
                         }
-    //                    parallel parallelStagesMap
                         parallel moduleBuild
                         }
                     }
@@ -212,13 +200,7 @@ def call(Map map) {
                                         withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
                                             sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
                                         }
-                                        withCredentials([kubeconfigFile(
-                                                credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
-                                                variable: 'KUBECONFIG')
-                                        ]) {
-                                            sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
-                                            sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
-                                        }
+
                                     }
                                 }
                             }
@@ -235,19 +217,20 @@ def generateDeploy(key) {
     return {
         stage('deploy ' + key) {
             container ("maven") {
-                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                }
-                withCredentials([kubeconfigFile(
-                        credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
-                        variable: 'KUBECONFIG')
-                ]) {
-                    sh 'echo "${IS_SIDECAR}"'
-                    sh 'echo "${K8S_APPLY_SIDECAR}"'
-                    sh 'echo "${K8S_APPLY}"'
-                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
-                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
-                }
+//                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+//                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+//                }
+                Kubernetes.deploy(this,key)
+//                withCredentials([kubeconfigFile(
+//                        credentialsId: env.KUBECONFIG_CREDENTIAL_ID,
+//                        variable: 'KUBECONFIG')
+//                ]) {
+//                    sh 'echo "${IS_SIDECAR}"'
+//                    sh 'echo "${K8S_APPLY_SIDECAR}"'
+//                    sh 'echo "${K8S_APPLY}"'
+//                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-service.yaml | kubectl apply -f -'
+//                    sh 'envsubst < ${K8S_APPLY}' + key + '/eip-' + key + '-deployment.yaml | kubectl apply -f -'
+//                }
             }
         }
     }
