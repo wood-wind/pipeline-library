@@ -181,8 +181,8 @@ def call(Map map) {
 //                                            sh 'docker pull ${IMAGE2}'
 //                                            }
                                             sh 'echo "111"'
-                                            sh 'echo "${imageName}"'
-                                            Docker.pull(this,imageName)
+                                            sh 'echo ${imageName}'
+                                            Docker.pull(this,"${imageName}")
                                         }
 
                                         sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
