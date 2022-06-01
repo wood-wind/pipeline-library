@@ -174,10 +174,10 @@ def call(Map map) {
                             moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
                             imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
                             for (key in moduleList) {
-                                echo '$key'
-                                moduleBuild[key] = {
-                                    stage(key) {
-                                        container('maven') {
+                                sh 'echo ${key}'
+                                stage(key) {
+                                    container('maven') {
+                                        moduleBuild[key] = {
                                             for (imageName in imagesList) {
                                                 Docker.pull(this, imageName)
                                             }
