@@ -162,19 +162,27 @@ def call(Map map) {
                 steps {
                     container("${map.pipeline_agent_lable}") {
                         script {
+//                            echo 'build modules images'
+//                            moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
+//                            def parallelStagesMap = moduleList.collectEntries { key ->
+//                                ["build && push  ${key}": generateStage(key)]
+//                            }
+//                            parallel parallelStagesMap
+
                             echo 'build modules images'
                             def moduleBuild = [:]
                             moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
                             imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
                             for (key in moduleList) {
+                                echo '$key'
                                 moduleBuild[key] = {
-//                                    container("${map.pipeline_agent_lable}") {
+                                    stage(key) {
                                         for (imageName in imagesList) {
-                                            Docker.pull(this,imageName)
+                                            Docker.pull(this, imageName)
                                         }
-                                        Docker.build(this,key)
-                                        Docker.push(this,key)
-//                                    }
+                                        Docker.build(this, key)
+                                        Docker.push(this, key)
+                                    }
                                 }
                             }
                             parallel moduleBuild
@@ -205,6 +213,33 @@ def call(Map map) {
                         }
                         parallel moduleDeploy
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Maven编译构建
+ */
+
+
+def generateStage(key) {
+    return {
+        stage('build image ' + key) {
+            container('maven') {
+                echo 'build   ' + key
+                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+                    sh 'docker pull ${IMAGE1}'
+                    sh 'docker pull ${IMAGE2}'
+                }
+                sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
+                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
+                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
+                    sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION'
+                    sh 'docker tag  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
+                    sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
                 }
             }
         }
@@ -250,32 +285,7 @@ def codeQualityAnalysis() {
     // 可打通项目管理平台自动提交bug指派任务
 }
 
-/**
- * Maven编译构建
- */
 
-
-def generateStage(key) {
-    return {
-        stage('build image ' + key) {
-            container('maven') {
-                echo 'build   ' + key
-                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                    sh 'docker pull ${IMAGE1}'
-                    sh 'docker pull ${IMAGE2}'
-                }
-                sh 'docker build --build-arg REGISTRY=$REGISTRY  --no-cache  -t $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION `pwd`/' + key + '/'
-                withCredentials([usernamePassword(passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME', credentialsId: "$DOCKER_CREDENTIAL_ID",)]) {
-                    sh 'echo "$DOCKER_PASSWORD" | docker login $REGISTRY -u "$DOCKER_USERNAME" --password-stdin'
-                    sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION'
-                    sh 'docker tag  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':$TAG_VERSION $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
-                    sh 'docker push  $REGISTRY/$DOCKER_REPO_NAMESPACE/' + key + ':latest '
-                }
-            }
-        }
-    }
-}
 
 /**
  * 云原生K8S部署大规模集群
