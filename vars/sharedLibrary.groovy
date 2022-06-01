@@ -173,7 +173,7 @@ def call(Map map) {
                             def moduleBuild = [:]
                             moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
                             imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
-                            for (key in moduleList) {
+                            for (int i = 0; i < moduleList.size(); i++) {
                                 moduleBuild[key] = {
                                     for (imageName in imagesList) {
                                         Docker.pull(this, imageName)
