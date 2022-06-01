@@ -140,18 +140,20 @@ def call(Map map) {
                     branch 'feature-pipeline-library-v3.1.1'
                 }
                 steps {
-                    script {
-                        def moduleDeploy = [:]
-                        moduleDeployList = MODULES.split(",").findAll { it }.collect { it.trim() }
-                        for (int i = 0; i < moduleDeployList.size(); i++) {
-                            def key = moduleDeployList[i]
-                            moduleDeploy[key] = {
-                                stage(key) {
-                                    Kubernetes.deploy(this,key)
+                    container("${map.pipeline_agent_lable}") {
+                        script {
+                            def moduleDeploy = [:]
+                            moduleDeployList = MODULES.split(",").findAll { it }.collect { it.trim() }
+                            for (int i = 0; i < moduleDeployList.size(); i++) {
+                                def key = moduleDeployList[i]
+                                moduleDeploy[key] = {
+                                    stage(key) {
+                                        Kubernetes.deploy(this, key)
+                                    }
                                 }
                             }
+                            parallel moduleDeploy
                         }
-                        parallel moduleDeploy
                     }
                 }
             }
