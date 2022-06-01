@@ -182,7 +182,7 @@ def call(Map map) {
                                     Docker.push(this, key)
                                 }
                             }
-                            matrix moduleBuild
+                            parallel moduleBuild
                         }
                     }
                 }
