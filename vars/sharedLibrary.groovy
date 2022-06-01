@@ -52,7 +52,7 @@ def call(Map map) {
             //安静的时期 设置管道的静默时间段（以秒为单位），以覆盖全局默认值
             quietPeriod(3)
             //删除隐式checkout scm语句
-            skipDefaultCheckout()
+            //skipDefaultCheckout()
         }
 
         stages {
