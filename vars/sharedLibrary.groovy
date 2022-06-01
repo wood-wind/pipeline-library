@@ -174,19 +174,15 @@ def call(Map map) {
                             moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
                             imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
                             for (key in moduleList) {
-                                stage(key) {
-                                    container('maven') {
-                                        moduleBuild[key] = {
-                                            for (imageName in imagesList) {
-                                                Docker.pull(this, imageName)
-                                            }
-                                            Docker.build(this, key)
-                                            Docker.push(this, key)
-                                        }
+                                moduleBuild[key] = {
+                                    for (imageName in imagesList) {
+                                        Docker.pull(this, imageName)
                                     }
+                                    Docker.build(this, key)
+                                    Docker.push(this, key)
                                 }
                             }
-                            parallel moduleBuild
+                            matrix moduleBuild
                         }
                     }
                 }
