@@ -174,7 +174,6 @@ def call(Map map) {
                             moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
                             imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
                             for (key in moduleList) {
-                                sh 'echo ${key}'
                                 stage(key) {
                                     container('maven') {
                                         moduleBuild[key] = {
