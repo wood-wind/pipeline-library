@@ -137,7 +137,7 @@ def call(Map map) {
 
             stage('Kubernetes deploy') {
                 when {
-                    branch 'feature-pipeline-library-v3.1.1'
+                    branch 'dev'
                 }
                 steps {
                     container("${map.pipeline_agent_lable}") {
