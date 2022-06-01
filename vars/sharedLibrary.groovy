@@ -173,13 +173,16 @@ def call(Map map) {
                             def moduleBuild = [:]
                             moduleList = MODULES.split(",").findAll { it }.collect { it.trim() }
                             imagesList = IMAGES.split(",").findAll { it }.collect { it.trim() }
-                            for (int key = 0; key < moduleList.size(); key++) {
+                            for (int i = 0; i < moduleList.size(); i++) {
+                                def key = moduleList[i]
                                 moduleBuild[key] = {
-                                    for (imageName in imagesList) {
-                                        Docker.pull(this, imageName)
+                                    stage(key) {
+                                        for (imageName in imagesList) {
+                                            Docker.pull(this, imageName)
+                                        }
+                                        Docker.build(this, key)
+                                        Docker.push(this, key)
                                     }
-                                    Docker.build(this, key)
-                                    Docker.push(this, key)
                                 }
                             }
                             parallel moduleBuild
