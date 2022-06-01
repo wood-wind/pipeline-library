@@ -177,11 +177,13 @@ def call(Map map) {
                                 echo '$key'
                                 moduleBuild[key] = {
                                     stage(key) {
-                                        for (imageName in imagesList) {
-                                            Docker.pull(this, imageName)
+                                        container('maven') {
+                                            for (imageName in imagesList) {
+                                                Docker.pull(this, imageName)
+                                            }
+                                            Docker.build(this, key)
+                                            Docker.push(this, key)
                                         }
-                                        Docker.build(this, key)
-                                        Docker.push(this, key)
                                     }
                                 }
                             }
