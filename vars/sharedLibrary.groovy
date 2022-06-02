@@ -76,6 +76,7 @@ def call(Map map) {
 
                         if (BRANCH_NAME == 'pipeline-shared-dev' && IS_SIDECAR == 'Y') {
                             env.K8S_APPLY = K8S_APPLY_SIDECAR
+                            sh 'echo env.K8S_APPLY'
                         }
                         sh 'env'
                     }
