@@ -75,16 +75,6 @@ def call(Map map) {
                             def gavMap = [:]
                             env.TAG_VERSION = pom['version'].text().trim()
 
-                            if (BRANCH_NAME == 'pipeline-shared-dev' && IS_SIDECAR == 'Y') {
-                                map.K8S_APPLY = K8S_APPLY_SIDECAR
-                                K8S_APPLY = map.K8S_APPLY
-                                env.K8S_APPLY = map.K8S_APPLY
-//                                map.K8S_APPLY = SIDECAR
-//                                sh "echo ${SIDECAR}"
-                                sh "echo ${env.K8S_APPLY}"
-                                sh "echo ${K8S_APPLY}"
-                                sh "echo ${map.K8S_APPLY}"
-                            }
                             sh 'env'
                         }
                     }
@@ -158,7 +148,11 @@ def call(Map map) {
                                 def key = moduleDeployList[i]
                                 moduleDeploy[key] = {
                                     stage(key) {
-                                        Kubernetes.deploy(this, key)
+                                        if (IS_SIDECAR == 'Y'){
+                                            Kubernetes.deploySidecar(this, key)
+                                        }else{
+                                            Kubernetes.deploy(this, key)
+                                        }
                                     }
                                 }
                             }
