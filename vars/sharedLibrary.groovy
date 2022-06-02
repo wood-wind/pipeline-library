@@ -74,7 +74,7 @@ def call(Map map) {
                         def gavMap = [:]
                         env.TAG_VERSION =  pom['version'].text().trim()
 
-                        if (BRANCH_NAME == 'dev' && IS_SIDECAR == 'Y') {
+                        if (BRANCH_NAME == 'pipeline-shared-dev' && IS_SIDECAR == 'Y') {
                             K8S_APPLY = K8S_APPLY_SIDECAR
                         }
                         sh 'env'
