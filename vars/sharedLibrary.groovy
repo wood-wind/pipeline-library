@@ -68,17 +68,19 @@ def call(Map map) {
 
             stage("init perameter") {
                 steps {
-                    script {
-                        def pomFile = readFile(file: 'pom.xml')
-                        def pom = new XmlParser().parseText(pomFile)
-                        def gavMap = [:]
-                        env.TAG_VERSION =  pom['version'].text().trim()
+                    container("${map.pipeline_agent_lable}") {
+                        script {
+                            def pomFile = readFile(file: 'pom.xml')
+                            def pom = new XmlParser().parseText(pomFile)
+                            def gavMap = [:]
+                            env.TAG_VERSION = pom['version'].text().trim()
 
-                        if (BRANCH_NAME == 'pipeline-shared-dev' && IS_SIDECAR == 'Y') {
-                            env.K8S_APPLY = K8S_APPLY_SIDECAR
-                            sh 'echo env.K8S_APPLY'
+                            if (BRANCH_NAME == 'pipeline-shared-dev' && IS_SIDECAR == 'Y') {
+                                env.K8S_APPLY = K8S_APPLY_SIDECAR
+                                sh 'echo env.K8S_APPLY'
+                            }
+                            sh 'env'
                         }
-                        sh 'env'
                     }
                 }
             }
