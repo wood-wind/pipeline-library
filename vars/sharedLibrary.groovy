@@ -138,7 +138,7 @@ def call(Map map) {
 
             stage('Kubernetes deploy') {
                 when {
-                    branch 'dev'
+                    branch 'pipeline-shared-dev'
                 }
                 steps {
                     container("${map.pipeline_agent_lable}") {
