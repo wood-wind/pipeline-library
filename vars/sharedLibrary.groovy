@@ -74,9 +74,11 @@ def call(Map map) {
                             def pom = new XmlParser().parseText(pomFile)
                             def gavMap = [:]
                             env.TAG_VERSION = pom['version'].text().trim()
+
                             if (BRANCH_NAME == 'pipeline-shared-dev' && IS_SIDECAR == 'Y') {
-                                def K8S_APPLY = env.K8S_APPLY_SIDECAR
-                                sh "echo ${K8S_APPLY_SIDECAR}"
+                                def SIDECAR = K8S_APPLY_SIDECAR
+                                env.K8S_APPLY = SIDECAR
+                                sh "echo ${SIDECAR}"
                                 sh "echo ${K8S_APPLY}"
                             }
                             sh 'env'
