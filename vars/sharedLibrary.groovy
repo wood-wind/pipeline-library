@@ -33,8 +33,9 @@ def call(Map map) {
             K8S_APPLY = "${map.k8s_apply}"
             K8S_APPLY_SIDECAR = "${map.k8s_apply_sidecar}"
             IS_SIDECAR = "${map.is_sidecar}"
-            MODULES = "${map.modules}"
             SKYWALKING_COLLECTOR_BACKEND_SERVICES = "${map.skywalking_collector_backend_services}"
+            FILE_UPLOAD = "${map.file_upload}"
+            MODULES = "${map.modules}"
 
             COMMIT_ID_SHORT = sh(returnStdout: true, script: 'git log --oneline -1 | awk \'{print \$1}\'')
             COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse  HEAD')
